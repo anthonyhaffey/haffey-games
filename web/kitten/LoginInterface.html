@@ -1,0 +1,168 @@
+<!--
+
+    Collector (Garcia, Kornell, Kerr, Blake & Haffey)
+    A program for running experiments on the web
+    Copyright 2012-2016 Mikey Garcia & Nate Kornell
+
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 3 as published by
+    the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+		Kitten release (2019) author: Dr. Anthony Haffey (a.haffey@reading.ac.uk)
+-->
+<style>
+#institute_div > .modal-body{
+  height:80%;
+  overflow-y: auto;
+}
+
+#github_login,
+#ocollector_login{
+  display:none;
+}
+
+.login_register_card{
+  margin: 0 auto; /* Added */
+  float: none; /* Added */
+  margin-bottom: 10px; /* Added */
+}
+
+
+</style>
+
+
+<script>
+function check_errors(){
+  switch(dev_obj.context){
+    case "server":
+      $.post("checkErrors.php",{
+        //nothing
+      },function(error_message){
+        if(error_message !== ""){
+          bootbox.alert(error_message);
+        }
+      });
+      break;
+  }
+}
+</script>
+
+
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+<div id="login_register_span"  style="height:90%">
+  <div class="card text-primary bg-white align-middle login_register_card" style="max-width: 36rem; position: relative; top: 50%; transform: translateY(-50%); ">
+    <div class="card-header bg-primary text-white">Collector Kitten Login</div>
+    <div class="card-body">
+      <span id="username"></span>
+      <div class="row">
+        <input id="username_input" name="user_email" type="email" class="form-control" placeholder="email">
+      </div>
+      <div class="row">
+          <input id="password_input" name="user_password" type="password" class="form-control" placeholder="password">
+      </div>
+      <div class="row">
+        <div class="g-recaptcha" data-sitekey="6Lcg0awUAAAAAL5nO7Kp-IJ7IEdARN9z1ryYCNi6"></div>
+      </div>
+      <div class="row">
+        <input class="btn btn-primary" type="button" style="margin:3px" id="login_button" 		value="login">
+        <button type="button" class="btn btn-primary" style="display:none" data-toggle="modal" data-target="#institute_div" onclick="list_institutes()" id="register_map_button"> Register </button>
+        <input class="btn btn-primary" type="button" style="margin:3px" id="register_button" value="register" style="display:none">
+
+        <input class="btn btn-primary" type="button" style="margin:3px" id="forgot_button" 	value="forgot password">
+
+
+        <!-- hidden inputs -->
+        <input type="submit" class="collectorButton" id="forgot_button_submit" name='login_type' value="forgot" style="display:none">
+        <input  type="submit" class="collectorButton" id="login_button_submit" name='login_type' value="login" style="display:none">
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!--
+To Do:
+
+-when clicking on submit, update the hidden inputs or trigger APIs depending on context
+
+-->
+
+<form action="login.php" method="post" style="padding:0px" id="ocollector_login">
+	<input type='hidden' name='return_page' id="return_page"/>
+  <script>
+  $("#return_page").val(document.URL);
+  </script>
+  <input style="display:none" type="submit" class="collectorButton" id="register_submit" name='login_type' value="register">
+</form>
+<script>
+$("#forgot_button").on("click",function(){
+	var email_val = $("#username_input").val();
+	bootbox.prompt({
+		title: "Please confirm your email:",
+		value: email_val,
+		callback: function (result) {
+			$("#forgot_button_submit").click();
+		}
+	});
+});
+$("#login_button").on("click",function(){
+  switch(dev_obj.context){
+    case "server":
+      $("#login_button_submit").click(); // to submit form
+      break;
+    case "localhost":
+
+      var username = $("#username_input").val();
+      var password = $("#password_input").val();
+      $.post("developerLogin.php",{
+        username:username,
+        password:password
+      },function(local_key){
+        window.localStorage.setItem("local_key",local_key);
+        window.localStorage.setItem("user_email",username);
+        //refresh the page.
+        window.location.href = window.location.href;
+      });
+      break;
+  }
+});
+$("#register_button").on("click",function(){
+  // checks
+	// password long enough?
+	if($("#password_input").val().length < 8){
+		bootbox.alert("Your password is too short. Please make a password of at least 8 characters. Ideally with a mixture of capital letters, numbers and characters.");
+	} else {
+		bootbox.confirm("Making sure you don't lose your password is extremely important! Your password is used as part of the encryption and decryption of your data. <br><br>In short, if you lose your password then you lose your data. <br><br> Once you've made sure your password will not be lost, click on <b>OK</b> to proceed",function(result){
+			if(result){
+				bootbox.prompt({
+					title: "Please confirm your password:",
+					inputType: 'text',
+					callback: function (result) {
+						if(result == $("#password_input").val()){
+							$("#register_map_button").click();
+						} else {
+							alert("Passwords did not match.");
+						}
+					}
+				});
+			}
+		});
+	}
+});
+$("#register_proceed_button").on("click",function(){
+  $("#country_selected").click();
+});
+$("#skip_map_button").on("click",function(){
+  $("#register_submit").click();
+});
+</script>

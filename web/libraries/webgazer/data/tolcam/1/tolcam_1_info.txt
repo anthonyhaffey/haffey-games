@@ -1,0 +1,2 @@
+subject	screen_width	screen_height	ua	consent	birthday	gender	visual	ident
+1	1046	722	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36	Thu Mar 26 2020 10:35:29 GMT+0000 (Greenwich Mean Time)	18	male	none	asd_none
