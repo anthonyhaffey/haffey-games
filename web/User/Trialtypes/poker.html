@@ -26,7 +26,7 @@
     <div class="input-group-prepend">
       <span class="input-group-text">Room code</span>
     </div>
-    <input type="text" class="form-control" aria-label="Amount (to the nearest dollar)">
+    <input type="text" class="form-control" aria-label="room code" id="room_code_input">
     <div class="input-group-append">
       <button class="input-group-text btn-primary" id="join_btn">Join</button>
     </div>
@@ -65,6 +65,39 @@ to do list
 /////////////
 // Actions //
 /////////////
+$("#join_btn").on("click",function(){
+  settings.this_room = master_sheet.filter(function(row){
+    return row.roomcode == $("#room_code_input").val();
+  })[0];
+  settings.collector_code = settings.this_room.collectorcode;
+  bootbox.prompt("What (nick)name do you want to use?",function(player_name){
+    settings.player_name = player_name;
+    var data = {
+      action: "join",
+      collector_code: settings.collector_code,
+      player_name: player_name,
+    }
+    $.ajax({
+      type: 'POST',
+      url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
+      data: data,
+      crossDomain: true,
+      timeout: 120000,
+      success:function(result){
+        //as it stands, this will never happen as Collector doesn't allow posts to it.
+      }
+    })
+    .catch(function(error){
+      //read the google sheet 
+      /*
+      ParseGSX.parseGSX(data.question_id,function(result){
+        show_question(result);
+      });
+      */
+    });
+  });
+});
+
 $("#new_room_btn").on("click",function(){
   settings.collector_code = makeid(12);
   bootbox.prompt("What (nick)name do you want to use?",function(player_name){
@@ -189,15 +222,15 @@ var master_sheet;
 function sheet_check(){
   ParseGSX.parseGSX("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g",function(quest_array){
     master_sheet = quest_array;
-    
+    settings.this_room = master_sheet.filter(function(row){
+      return row.collectorcode == settings.collector_code;
+    })[0];
     switch(settings.phase){
       case "welcome":
-        this_room = master_sheet.filter(function(row){
-            return row.collectorcode == settings.collector_code;
-        })[0];
         
-        if(typeof(this_room) !== "undefined"){
-          settings.this_room = this_room;
+        
+        if(typeof(settings.this_room) !== "undefined"){
+          
           settings.phase = "lobby";
           $("#welcome_screen").hide();
           $("#lobby").fadeIn(1000);
