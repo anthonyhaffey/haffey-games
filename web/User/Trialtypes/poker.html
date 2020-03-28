@@ -1,0 +1,224 @@
+<style>
+#lobby{
+  margin:auto;
+  width:500px;
+  padding:50px;
+  max-height:600px;
+  text-align: center;  
+  display:none;  
+}
+#new_room_btn{
+  width:100%;
+}
+#welcome_screen{
+  margin:auto;
+  width:500px;
+  padding:50px;
+  max-height:600px;
+  text-align: center;  
+}
+</style>
+<div id="welcome_screen">
+  <h1 class="text-primary">Texas Hold-em</h1>
+  <button class="btn btn-primary" id="new_room_btn">New room</button>
+  <br><br>
+  <div class="input-group mb-3">
+    <div class="input-group-prepend">
+      <span class="input-group-text">Room code</span>
+    </div>
+    <input type="text" class="form-control" aria-label="Amount (to the nearest dollar)">
+    <div class="input-group-append">
+      <button class="input-group-text btn-primary" id="join_btn">Join</button>
+    </div>
+  </div>
+</div>
+<div id="lobby">
+  <h1>Lobby</h1>
+  <div id="lobby_people"></div>
+  <button class="btn btn-primary">Everybody's in</button>
+</div>
+<div id="game">
+  
+</div>
+
+<script>
+settings={
+  phase: "welcome",
+  collector_code: "tbc",
+  player_name: "tbc",
+  this_room: "tbc",
+  raw_deck: {},
+  player_cards:{},
+  table_cards:[]
+}
+phases = [
+  "welcome",
+  "lobby",
+  "playing"
+]
+
+/*
+to do list
+- prevent a player stealing another player's name...?
+*/
+
+/////////////
+// Actions //
+/////////////
+$("#new_room_btn").on("click",function(){
+  settings.collector_code = makeid(12);
+  bootbox.prompt("What (nick)name do you want to use?",function(player_name){
+    settings.player_name = player_name;
+    var data = {
+      action: "create_room",
+      collector_code: settings.collector_code,
+      player_name: player_name,
+    }
+    $.ajax({
+      type: 'POST',
+      url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
+      data: data,
+      crossDomain: true,
+      timeout: 120000,
+      success:function(result){
+        //as it stands, this will never happen as Collector doesn't allow posts to it.
+      }
+    })
+    .catch(function(error){
+      //read the google sheet 
+      /*
+      ParseGSX.parseGSX(data.question_id,function(result){
+        show_question(result);
+      });
+      */
+    });
+  });
+});
+
+
+player_obj = {
+  name:"tbc",
+  amount:-1,
+  wipeouts:0,
+  current_round:-1
+}
+
+function fill_deck(){
+  var suits = ["C","D","H","S"];
+  for(var card_no = 1; card_no < 14; card_no++){
+    suits.forEach(function(suit){
+      settings.raw_deck[card_no + suit]=({
+        card_no : card_no,
+        suit:     suit
+      });
+    });
+  }
+}
+fill_deck();
+hands = {
+  "high_card":{
+    rank:0
+  },
+  "pair":{
+    rank:1
+  },
+  "2_pair":{
+    rank:2
+  },
+  "3_kind":{
+    rank:3
+  },
+  "straight":{
+    rank:4
+  },
+  "flush":{
+    rank:5
+  },
+  "full_house":{
+    rank:6
+  },
+  "4_kind":{
+    rank:7
+  },
+  "straight_flush":{
+    rank:8
+  }
+}
+
+
+//based on solution by csharptest.net at https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
+function makeid(length) {
+  var result           = '';
+  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmonpqrstuvwxyz1234567890';
+  var charactersLength = characters.length;
+  for ( var i = 0; i < length; i++ ) {
+    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+  }
+  return result;
+}
+
+//based on code found at: https://raw.githubusercontent.com/drumwolf/parse-gsx/0ba67bf115eac96e0763777a4fb2c485a35e2daa/parse-gsx-ajax.js
+var ParseGSX = (function() {
+  var _defaultCallback = function(data) {
+    console.log(data);
+  };
+  var _parseRawData = function(res) {
+    var finalData = [];
+    res.feed.entry.forEach(function(entry){
+      var parsedObject = {};
+      for (var key in entry) {
+        if (key.substring(0,4) === "gsx$") {
+          parsedObject[key.slice(4)] = entry[key]["$t"];
+        }
+      }
+      finalData.push(parsedObject);
+    });
+    var processGSXData = _defaultCallback;
+    processGSXData(finalData);
+  };
+  var parseGSX = function(spreadsheetID, callback) {
+    var url = "https://spreadsheets.google.com/feeds/list/" + spreadsheetID + "/od6/public/values?alt=json";
+    var ajax = $.get(url);
+    if (callback) { _defaultCallback = callback; }
+    $.when(ajax).then(_parseRawData);
+  };
+  return { parseGSX: parseGSX };
+})();
+
+var master_sheet;
+function sheet_check(){
+  ParseGSX.parseGSX("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g",function(quest_array){
+    master_sheet = quest_array;
+    
+    switch(settings.phase){
+      case "welcome":
+        this_room = master_sheet.filter(function(row){
+            return row.collectorcode == settings.collector_code;
+        })[0];
+        
+        if(typeof(this_room) !== "undefined"){
+          settings.this_room = this_room;
+          settings.phase = "lobby";
+          $("#welcome_screen").hide();
+          $("#lobby").fadeIn(1000);
+        }
+        //if(master_sheet)
+        break;
+      case "lobby":
+        var lobby_people_html = "";
+        
+        for(var i = 1; i < 10; i++){
+          if(settings.this_room["player"+i] !== ""){
+            lobby_people_html += "<h2 class='text-primary'>" + settings.this_room["player"+i] + "</h2>";
+          }
+        }
+        $("#lobby_people").html(lobby_people_html);
+        break
+    }
+  });
+  setTimeout(function(){
+    sheet_check();
+  },1000);
+}
+sheet_check();
+</script>
