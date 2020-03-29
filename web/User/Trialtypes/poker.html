@@ -1,4 +1,13 @@
 <style>
+#game{
+  position:relative;
+  margin:auto;
+  width:800px;
+  padding:50px;
+  height:800px;
+  text-align: center;  
+  display:none;  
+}
 #lobby{
   margin:auto;
   width:500px;
@@ -10,6 +19,12 @@
 #new_room_btn{
   width:100%;
 }
+#table{
+  border-radius:350px;
+  background-color:green;
+  width:700px;
+  height:600px;
+}
 #welcome_screen{
   margin:auto;
   width:500px;
@@ -17,7 +32,76 @@
   max-height:600px;
   text-align: center;  
 }
+
+#player_1{
+  left:50px;
+  top:100px;
+}
+#player_2{
+  top:30px;
+  left:250px;
+}
+#player_3{
+  top:30px;
+  left:450px;
+}
+#player_4{
+  top:100px;
+  left:600px;
+}
+#player_5{
+  top:300px;
+  left:700px;
+}
+#player_6{
+  top:500px;
+  left:600px;
+}
+#player_7{
+  top:600px;
+  left:450px;
+}
+#player_8{
+  top:600px;
+  left:250px;
+}
+#player_9{
+  top:500px;
+  left:50px;
+}
+#player_10{
+  top:300px;
+  left:0px;
+}
+#your_cards{
+  position:absolute;
+  top:400px;
+  left:300px;
+}
+#your_bet{
+  position:absolute;
+  top:520px;
+  left:275px;
+}
+#middle_cards{
+  position:absolute;
+  top:250px;
+  left:150px;
+}
+.card{
+  width:100px;
+  height:100px;
+}
+.player_space{
+  position:absolute;
+  background-color: white;
+  border-style: solid;
+  border-radius: 10px;
+  padding: 10px;
+  
+}
 </style>
+<h1>Room Code:<span id="room_code_span"></span></h1>
 <div id="welcome_screen">
   <h1 class="text-primary">Texas Hold-em</h1>
   <button class="btn btn-primary" id="new_room_btn">New room</button>
@@ -35,15 +119,67 @@
 <div id="lobby">
   <h1>Lobby</h1>
   <div id="lobby_people"></div>
-  <button class="btn btn-primary">Everybody's in</button>
+  <button class="btn btn-primary" id="everybody_in_btn">Everybody's in</button>
 </div>
 <div id="game">
-  
+  <div id="table"></div>
+  <div id="player_0" class="text-primary player_space">player 0</div>
+  <div id="player_1" class="text-primary player_space">player 1</div>
+  <div id="player_2" class="text-primary player_space">player 2</div>
+  <div id="player_3" class="text-primary player_space">player 3</div>
+  <div id="player_4" class="text-primary player_space">player 4</div>
+  <div id="player_5" class="text-primary player_space">player 5</div>
+  <div id="player_6" class="text-primary player_space">player 6</div>
+  <div id="player_7" class="text-primary player_space">player 7</div>
+  <div id="player_8" class="text-primary player_space">player 8</div>
+  <div id="player_9" class="text-primary player_space">player 9</div>
+  <div id="middle_cards">
+    <table>
+      <tr>
+        <td>
+          <img id="middle_1" class="card" src="../User/Stimuli/Cards/back-red.png" />
+        </td>
+        <td>
+          <img id="middle_2" class="card" src="../User/Stimuli/Cards/back-red.png" />
+        </td>
+        <td>
+          <img id="middle_3" class="card" src="../User/Stimuli/Cards/back-red.png" />
+        </td>
+        <td>
+          <img id="middle_4" class="card" src="../User/Stimuli/Cards/back-red.png" />
+        </td>
+        <td>
+          <img id="middle_5" class="card" src="../User/Stimuli/Cards/back-red.png" />
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div id="your_cards">
+    <table>
+      <tr>
+        <td>
+          <img id="card_1" class="card"/>
+        </td>
+        <td>
+          <img id="card_2" class="card"/>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div id="your_bet">
+    <button class="btn btn-danger" id="fold_btn">Fold</button>
+    <button class="btn btn-danger" id="check_call_btn">Check</button>
+    <div class="input-group mb-3">
+      <input type="text" class="form-control" aria-label="raise_btn" id="raise_input">
+      <div class="input-group-append">
+        <button class="input-group-text btn-raise" id="raise_btn">Raise</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
 settings={
-  phase: "welcome",
   collector_code: "tbc",
   player_name: "tbc",
   this_room: "tbc",
@@ -51,6 +187,8 @@ settings={
   player_cards:{},
   table_cards:[]
 }
+phase = "welcome",
+
 phases = [
   "welcome",
   "lobby",
@@ -69,13 +207,43 @@ $("#join_btn").on("click",function(){
   settings.this_room = master_sheet.filter(function(row){
     return row.roomcode == $("#room_code_input").val();
   })[0];
-  settings.collector_code = settings.this_room.collectorcode;
-  bootbox.prompt("What (nick)name do you want to use?",function(player_name){
-    settings.player_name = player_name;
-    var data = {
-      action: "join",
+  if(typeof(settings.this_room) == "undefined"){
+    bootbox.alert("That's not a recognised room code");
+  } else {
+    settings.collector_code = settings.this_room.collectorcode;
+    bootbox.prompt("What (nick)name do you want to use?",function(player_name){
+      player_name = player_name.toUpperCase();
+      settings.player_name = player_name;
+      var data = {
+        action: "join",
+        collector_code: settings.collector_code,
+        player_name: player_name,
+      }
+      $.ajax({
+        type: 'POST',
+        url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
+        data: data,
+        crossDomain: true,
+        timeout: 120000,
+        success:function(result){
+          //as it stands, this will never happen as Collector doesn't allow posts to it.
+        }
+      })
+      .catch(function(error){
+        //read the google sheet 
+        /*
+        ParseGSX.parseGSX(data.question_id,function(result){
+          show_question(result);
+        });
+        */
+      });
+    });    
+  }
+});
+$("#everybody_in_btn").on("click",function(){
+  var data = {
+      action: "everybody_in",
       collector_code: settings.collector_code,
-      player_name: player_name,
     }
     $.ajax({
       type: 'POST',
@@ -95,13 +263,11 @@ $("#join_btn").on("click",function(){
       });
       */
     });
-  });
 });
-
 $("#new_room_btn").on("click",function(){
   settings.collector_code = makeid(12);
   bootbox.prompt("What (nick)name do you want to use?",function(player_name){
-    settings.player_name = player_name;
+    settings.player_name = player_name.toUpperCase();
     var data = {
       action: "create_room",
       collector_code: settings.collector_code,
@@ -127,7 +293,9 @@ $("#new_room_btn").on("click",function(){
     });
   });
 });
-
+$("#room_code_input").on("input",function(){
+  $(this).val($(this).val().toUpperCase());
+});
 
 player_obj = {
   name:"tbc",
@@ -136,18 +304,7 @@ player_obj = {
   current_round:-1
 }
 
-function fill_deck(){
-  var suits = ["C","D","H","S"];
-  for(var card_no = 1; card_no < 14; card_no++){
-    suits.forEach(function(suit){
-      settings.raw_deck[card_no + suit]=({
-        card_no : card_no,
-        suit:     suit
-      });
-    });
-  }
-}
-fill_deck();
+
 hands = {
   "high_card":{
     rank:0
@@ -218,6 +375,82 @@ var ParseGSX = (function() {
   return { parseGSX: parseGSX };
 })();
 
+$("#fold_btn").on("click",function(){
+  var data = {
+    action: "fold",
+    collector_code: settings.collector_code,
+    player_name: settings.player_name,
+  }
+  $.ajax({
+    type: 'POST',
+    url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
+    data: data,
+    crossDomain: true,
+    timeout: 120000,
+    success:function(result){
+      //as it stands, this will never happen as Collector doesn't allow posts to it.
+    }
+  })
+  .catch(function(error){
+    //read the google sheet 
+    /*
+    ParseGSX.parseGSX(data.question_id,function(result){
+      show_question(result);
+    });
+    */
+  });
+});
+
+function update_players(){
+  function update_your_cards(roomobj){
+    var your_player = roomobj.players[settings.player_name];
+    //var card_1 = ;
+    if(typeof(your_player) !== "undefined" &&
+       typeof(your_player.current_hand) !== "undefined" &&
+       typeof(your_player.current_hand[0]) !== "undefined"){
+      $("#card_1").attr("src","../User/Stimuli/Cards/" + your_player.current_hand[0].card_file);
+      $("#card_2").attr("src","../User/Stimuli/Cards/" + your_player.current_hand[1].card_file);
+      
+      //if your turn, allow you to bid
+      if(your_player.current_bid == "your turn"){
+        $("#fold_btn").attr("disabled",false);
+        $("#check_call_btn").attr("disabled",false);
+        $("#raise_input").attr("disabled",false);
+        $("#raise_btn").attr("disabled",false);
+      } else {
+        $("#fold_btn").attr("disabled",true);
+        $("#check_call_btn").attr("disabled",true);
+        $("#raise_input").attr("disabled",true);
+        $("#raise_btn").attr("disabled",true);
+      }
+      
+      
+      
+    }
+  }
+  var roomobj = JSON.parse(settings.this_room.roomobj);
+  for(var i = 0; i< 10; i++){
+    var this_player = Object.keys(roomobj.players).filter(function(player){
+      return roomobj.players[player].player_no == i
+    })[0];
+    if(typeof(this_player) == "undefined"){
+      $("#player_" + i).hide();
+    } else {
+      var player_html = "<h6>" + this_player + "</h6>" +
+                        "<h6>Chips: " + roomobj.players[this_player].chips + "</h6>" +
+                        "<h6>Bet: "   + roomobj.players[this_player].current_pot + "</h6>" +
+                        "<h6>Status: "   + roomobj.players[this_player].current_bid + "</h6>";
+      $("#player_" + i).html(player_html);
+      if(this_player == settings.player_name){
+        $("#player_" + i).removeClass("text-primary");
+        $("#player_" + i).addClass("text-danger");
+      }
+      update_your_cards(roomobj);
+      
+    }
+  }
+}
+
 var master_sheet;
 function sheet_check(){
   ParseGSX.parseGSX("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g",function(quest_array){
@@ -225,33 +458,49 @@ function sheet_check(){
     settings.this_room = master_sheet.filter(function(row){
       return row.collectorcode == settings.collector_code;
     })[0];
-    switch(settings.phase){
+    switch(phase){
       case "welcome":
         
         
         if(typeof(settings.this_room) !== "undefined"){
-          
-          settings.phase = "lobby";
+          phase = "lobby";
           $("#welcome_screen").hide();
           $("#lobby").fadeIn(1000);
         }
         //if(master_sheet)
+        setTimeout(function(){
+          sheet_check();
+        },1000);
         break;
       case "lobby":
         var lobby_people_html = "";
         
-        for(var i = 1; i < 10; i++){
+        for(var i = 0; i < 10; i++){
           if(settings.this_room["player"+i] !== ""){
             lobby_people_html += "<h2 class='text-primary'>" + settings.this_room["player"+i] + "</h2>";
           }
         }
         $("#lobby_people").html(lobby_people_html);
-        break
+        $("#room_code_span").html(settings.this_room.roomcode);
+
+        if(settings.this_room.everybodyin == "TRUE"){
+          phase = "playing";
+          $("#lobby").hide();
+          $("#game").fadeIn(1000);
+          update_players();
+        }
+        setTimeout(function(){
+          sheet_check();
+        },1000);
+        break;
+      case "playing":
+        update_players(); 
+        setTimeout(function(){
+          sheet_check();
+        },1000);
+        break;
     }
   });
-  setTimeout(function(){
-    sheet_check();
-  },1000);
 }
 sheet_check();
 </script>
