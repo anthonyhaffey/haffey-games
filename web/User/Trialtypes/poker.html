@@ -305,37 +305,6 @@ player_obj = {
 }
 
 
-hands = {
-  "high_card":{
-    rank:0
-  },
-  "pair":{
-    rank:1
-  },
-  "2_pair":{
-    rank:2
-  },
-  "3_kind":{
-    rank:3
-  },
-  "straight":{
-    rank:4
-  },
-  "flush":{
-    rank:5
-  },
-  "full_house":{
-    rank:6
-  },
-  "4_kind":{
-    rank:7
-  },
-  "straight_flush":{
-    rank:8
-  }
-}
-
-
 //based on solution by csharptest.net at https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
 function makeid(length) {
   var result           = '';
@@ -468,6 +437,36 @@ function update_players(){
         $("#raise_btn").attr("disabled",true);
       }
       
+      switch(roomobj.round_phase){
+        case 0:
+          $("#middle_1").attr("src","../User/Stimuli/Cards/back-red.png");
+          $("#middle_2").attr("src","../User/Stimuli/Cards/back-red.png");
+          $("#middle_3").attr("src","../User/Stimuli/Cards/back-red.png");
+          $("#middle_4").attr("src","../User/Stimuli/Cards/back-red.png");
+          $("#middle_5").attr("src","../User/Stimuli/Cards/back-red.png");
+          break;
+        case 1:
+          $("#middle_1").attr("src","../User/Stimuli/Cards/" + roomobj.middle_cards[0].card_file);
+          $("#middle_2").attr("src","../User/Stimuli/Cards/" + roomobj.middle_cards[1].card_file);
+          $("#middle_3").attr("src","../User/Stimuli/Cards/" + roomobj.middle_cards[2].card_file);
+          $("#middle_4").attr("src","../User/Stimuli/Cards/back-red.png");
+          $("#middle_5").attr("src","../User/Stimuli/Cards/back-red.png");
+          break;
+        case 2:
+          $("#middle_1").attr("src","../User/Stimuli/Cards/" + roomobj.middle_cards[0].card_file);
+          $("#middle_2").attr("src","../User/Stimuli/Cards/" + roomobj.middle_cards[1].card_file);
+          $("#middle_3").attr("src","../User/Stimuli/Cards/" + roomobj.middle_cards[2].card_file);
+          $("#middle_4").attr("src","../User/Stimuli/Cards/" + roomobj.middle_cards[3].card_file);
+          $("#middle_5").attr("src","../User/Stimuli/Cards/back-red.png");
+          break
+        case 3:
+          $("#middle_1").attr("src","../User/Stimuli/Cards/" + roomobj.middle_cards[0].card_file);
+          $("#middle_2").attr("src","../User/Stimuli/Cards/" + roomobj.middle_cards[1].card_file);
+          $("#middle_3").attr("src","../User/Stimuli/Cards/" + roomobj.middle_cards[2].card_file);
+          $("#middle_4").attr("src","../User/Stimuli/Cards/" + roomobj.middle_cards[3].card_file);
+          $("#middle_5").attr("src","../User/Stimuli/Cards/" + roomobj.middle_cards[4].card_file);
+          break;
+      }
       
       
     }
