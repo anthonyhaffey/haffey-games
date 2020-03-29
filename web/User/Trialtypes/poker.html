@@ -32,7 +32,10 @@
   max-height:600px;
   text-align: center;  
 }
-
+#player_0{
+  top:300px;
+  left:0px;
+}
 #player_1{
   left:50px;
   top:100px;
@@ -69,10 +72,7 @@
   top:500px;
   left:50px;
 }
-#player_10{
-  top:300px;
-  left:0px;
-}
+
 #your_cards{
   position:absolute;
   top:400px;
@@ -401,6 +401,32 @@ $("#fold_btn").on("click",function(){
   });
 });
 
+$("#check_call_btn").on("click",function(){
+  var data = {
+    action: "check_call",
+    collector_code: settings.collector_code,
+    player_name: settings.player_name,
+  }
+  $.ajax({
+    type: 'POST',
+    url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
+    data: data,
+    crossDomain: true,
+    timeout: 120000,
+    success:function(result){
+      //as it stands, this will never happen as Collector doesn't allow posts to it.
+    }
+  })
+  .catch(function(error){
+    //read the google sheet 
+    /*
+    ParseGSX.parseGSX(data.question_id,function(result){
+      show_question(result);
+    });
+    */
+  });
+});
+
 function update_players(){
   function update_your_cards(roomobj){
     var your_player = roomobj.players[settings.player_name];
@@ -417,6 +443,24 @@ function update_players(){
         $("#check_call_btn").attr("disabled",false);
         $("#raise_input").attr("disabled",false);
         $("#raise_btn").attr("disabled",false);
+        
+        //detect whether checking or calling
+        var max_bid = -1;
+        Object.keys(roomobj.players).forEach(function(player){
+          if(roomobj.players[player].current_pot > max_bid){
+            max_bid = roomobj.players[player].current_pot;
+          }
+        });
+        
+        if(max_bid > your_player.current_pot){
+          $("#check_call_btn").html("Call");
+        } else if(max_bid == your_player.current_pot) {
+          $("#check_call_btn").html("Check");
+        } else {
+          bootbox.alert("something has gone wrong");
+        }
+        
+        
       } else {
         $("#fold_btn").attr("disabled",true);
         $("#check_call_btn").attr("disabled",true);
