@@ -1,3 +1,7 @@
+<script
+  src="https://code.jquery.com/jquery-3.4.1.min.js"
+  integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
+  crossorigin="anonymous"></script>
 <style>
 #game{
   position:relative;
@@ -72,6 +76,106 @@
   top:500px;
   left:50px;
 }
+#player_1_card_1{
+  position:absolute;
+  left:-200px;
+  top:300px;
+}
+#player_1_card_2{
+  position:absolute;
+  left:-100px;
+  top:300px;
+}
+#player_2_card_1{
+  position:absolute;
+  left:-150px;
+  top:100px;
+}
+#player_2_card_2{
+  position:absolute;
+  left:-50px;
+  top:100px;
+}
+#player_3_card_1{
+  position:absolute;
+  left:150px;
+  top:-50px;
+}
+#player_3_card_2{
+  position:absolute;
+  left:50px;
+  top:-50px;
+}
+#player_4_card_1{
+  position:absolute;
+  left:550px;
+  top:-50px;
+}
+#player_4_card_2{
+  position:absolute;
+  left:650px;
+  top:-50px;
+}
+#player_5_card_1{
+  position:absolute;
+  left:750px;
+  top:100px;
+}
+#player_5_card_2{
+  position:absolute;
+  left:850px;
+  top:100px;
+}
+#player_6_card_1{
+  position:absolute;
+  left:800px;
+  top:320px;
+}
+#player_6_card_2{
+  position:absolute;
+  left:900px;
+  top:320px;
+}
+#player_7_card_1{
+  position:absolute;
+  left:750px;
+  top:520px;
+}
+#player_7_card_2{
+  position:absolute;
+  left:850px;
+  top:520px;
+}
+#player_8_card_1{
+  position:absolute;
+  left:550px;
+  top:730px;
+}
+#player_8_card_2{
+  position:absolute;
+  left:650px;
+  top:730px;
+}
+#player_9_card_1{
+  position:absolute;
+  left:50px;
+  top:730px;
+}
+#player_9_card_2{
+  position:absolute;
+  left:150px;
+  top:730px;
+}
+#player_10_card_1{
+  position:absolute;
+  left:-150px;
+  top:520px;
+}
+#player_10_card_2{
+  position:absolute;
+  left:-50px;
+  top:520px;
+}
 
 #your_cards{
   position:absolute;
@@ -133,6 +237,29 @@
   <div id="player_7" class="text-primary player_space">player 7</div>
   <div id="player_8" class="text-primary player_space">player 8</div>
   <div id="player_9" class="text-primary player_space">player 9</div>
+  <img id="player_1_card_1" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_1_card_2" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_2_card_1" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_2_card_2" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_3_card_1" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_3_card_2" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_4_card_1" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_4_card_2" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_5_card_1" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_5_card_2" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_6_card_1" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_6_card_2" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_7_card_1" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_7_card_2" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_8_card_1" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_8_card_2" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_9_card_1" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_9_card_2" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_10_card_1" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+  <img id="player_10_card_2" class="player_card card" src="../User/Stimuli/Cards/back-red.png"/>
+
+
+
   <div id="middle_cards">
     <table>
       <tr>
@@ -185,7 +312,8 @@ settings={
   this_room: "tbc",
   raw_deck: {},
   player_cards:{},
-  table_cards:[]
+  table_cards:[],
+  missing_players_showing:true
 }
 phase = "welcome",
 
@@ -403,8 +531,32 @@ function update_players(){
     if(typeof(your_player) !== "undefined" &&
        typeof(your_player.current_hand) !== "undefined" &&
        typeof(your_player.current_hand[0]) !== "undefined"){
-      $("#card_1").attr("src","../User/Stimuli/Cards/" + your_player.current_hand[0].card_file);
-      $("#card_2").attr("src","../User/Stimuli/Cards/" + your_player.current_hand[1].card_file);
+      //$("#card_1").attr("src","../User/Stimuli/Cards/" + your_player.current_hand[0].card_file);
+      //$("#card_2").attr("src","../User/Stimuli/Cards/" + your_player.current_hand[1].card_file);
+      
+        if(settings.missing_players_showing){
+          $(".player_card").hide();
+          settings.missing_players_showing = false;
+        }
+        Object.keys(roomobj.players).forEach(function(player,player_no){
+          this_player_no = player_no + 1;
+          if(player == settings.player_name){
+            $("#player_"+this_player_no+"_card_1").attr("src","../User/Stimuli/Cards/" + your_player.current_hand[0].card_file);
+            $("#player_"+this_player_no+"_card_2").attr("src","../User/Stimuli/Cards/" + your_player.current_hand[1].card_file);
+            $("#player_"+this_player_no+"_card_1").show();
+            $("#player_"+this_player_no+"_card_2").show();
+          } else {
+            $("#player_"+this_player_no+"_card_1").attr("src","../User/Stimuli/Cards/back-red.png");
+            $("#player_"+this_player_no+"_card_2").attr("src","../User/Stimuli/Cards/back-red.png");
+            $("#player_"+this_player_no+"_card_1").show();
+            $("#player_"+this_player_no+"_card_2").show();
+          }
+          if(roomobj.players[player].current_pot > max_bid){
+            max_bid = roomobj.players[player].current_pot;
+          }
+        });
+      
+
       
       //if your turn, allow you to bid
       if(your_player.current_bid == "your turn"){
@@ -415,7 +567,7 @@ function update_players(){
         
         //detect whether checking or calling
         var max_bid = -1;
-        Object.keys(roomobj.players).forEach(function(player){
+        Object.keys(roomobj.players).forEach(function(player,player_no){
           if(roomobj.players[player].current_pot > max_bid){
             max_bid = roomobj.players[player].current_pot;
           }
