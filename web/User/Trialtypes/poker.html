@@ -281,18 +281,7 @@
       </tr>
     </table>
   </div>
-  <div id="your_cards">
-    <table>
-      <tr>
-        <td>
-          <img id="card_1" class="card"/>
-        </td>
-        <td>
-          <img id="card_2" class="card"/>
-        </td>
-      </tr>
-    </table>
-  </div>
+  <button id="your_cards">Deal new hand</button>
   <div id="your_bet">
     <button class="btn btn-danger" id="fold_btn">Fold</button>
     <button class="btn btn-danger" id="check_call_btn">Check</button>
@@ -306,6 +295,32 @@
 </div>
 
 <script>
+$("#your_cards").on("click",function(){
+  var data = {
+    action: "deal",
+    collector_code: settings.collector_code
+  }
+  $.ajax({
+    type: 'POST',
+    url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
+    data: data,
+    crossDomain: true,
+    timeout: 120000,
+    success:function(result){
+      //as it stands, this will never happen as Collector doesn't allow posts to it.
+    }
+  })
+  .catch(function(error){
+    //read the google sheet 
+    /*
+    ParseGSX.parseGSX(data.question_id,function(result){
+      show_question(result);
+    });
+    */
+  });
+});
+
+
 settings={
   collector_code: "tbc",
   player_name: "tbc",
@@ -531,8 +546,6 @@ function update_players(){
     if(typeof(your_player) !== "undefined" &&
        typeof(your_player.current_hand) !== "undefined" &&
        typeof(your_player.current_hand[0]) !== "undefined"){
-      //$("#card_1").attr("src","../User/Stimuli/Cards/" + your_player.current_hand[0].card_file);
-      //$("#card_2").attr("src","../User/Stimuli/Cards/" + your_player.current_hand[1].card_file);
       
         if(settings.missing_players_showing){
           $(".player_card").hide();
