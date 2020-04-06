@@ -302,6 +302,33 @@
 </div>
 
 <script>
+$("#raise_btn").on("click",function(){
+  var data = {
+    action: "raise",
+    amount: $("#raise_input").val(),
+    collector_code: settings.collector_code,
+    player_name: settings.player_name, 
+  }
+  $.ajax({
+    type: 'POST',
+    url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
+    data: data,
+    crossDomain: true,
+    timeout: 120000,
+    success:function(result){
+      //as it stands, this will never happen as Collector doesn't allow posts to it.
+    }
+  })
+  .catch(function(error){
+    //read the google sheet 
+    /*
+    ParseGSX.parseGSX(data.question_id,function(result){
+      show_question(result);
+    });
+    */
+  });
+});
+
 $("#deal_cards").on("click",function(){
   var data = {
     action: "deal",
