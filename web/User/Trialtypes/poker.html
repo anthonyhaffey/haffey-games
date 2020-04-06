@@ -177,10 +177,10 @@
   top:520px;
 }
 
-#your_cards{
+#deal_cards{
   position:absolute;
   top:400px;
-  left:300px;
+  left:335px;
 }
 #your_bet{
   position:absolute;
@@ -191,6 +191,12 @@
   position:absolute;
   top:250px;
   left:150px;
+}
+#winner_div{
+  position:absolute;
+  top:450px;
+  left:0px;
+  width:100%;
 }
 .card{
   width:100px;
@@ -281,7 +287,8 @@
       </tr>
     </table>
   </div>
-  <button id="your_cards">Deal new hand</button>
+  <h1 id="winner_div" class="text-white"></h1>
+  <button id="deal_cards" class="btn btn-danger">Deal new hand</button>
   <div id="your_bet">
     <button class="btn btn-danger" id="fold_btn">Fold</button>
     <button class="btn btn-danger" id="check_call_btn">Check</button>
@@ -295,7 +302,7 @@
 </div>
 
 <script>
-$("#your_cards").on("click",function(){
+$("#deal_cards").on("click",function(){
   var data = {
     action: "deal",
     collector_code: settings.collector_code
@@ -559,10 +566,24 @@ function update_players(){
             $("#player_"+this_player_no+"_card_1").show();
             $("#player_"+this_player_no+"_card_2").show();
           } else {
-            $("#player_"+this_player_no+"_card_1").attr("src","../User/Stimuli/Cards/back-red.png");
-            $("#player_"+this_player_no+"_card_2").attr("src","../User/Stimuli/Cards/back-red.png");
-            $("#player_"+this_player_no+"_card_1").show();
-            $("#player_"+this_player_no+"_card_2").show();
+            if(typeof(roomobj.winner) == "undefined" || roomobj.winner.length == 0){
+              $("#player_"+this_player_no+"_card_1").attr("src","../User/Stimuli/Cards/back-red.png");
+              $("#player_"+this_player_no+"_card_2").attr("src","../User/Stimuli/Cards/back-red.png");
+              $("#player_"+this_player_no+"_card_1").show();
+              $("#player_"+this_player_no+"_card_2").show();
+            } else {
+              if(roomobj.players[player].current_bid !== "fold"){
+                $("#player_"+this_player_no+"_card_1").attr("src","../User/Stimuli/Cards/" + roomobj.players[player].current_hand[0].card_file);
+                $("#player_"+this_player_no+"_card_2").attr("src","../User/Stimuli/Cards/" + roomobj.players[player].current_hand[1].card_file);
+                $("#player_"+this_player_no+"_card_1").show();
+                $("#player_"+this_player_no+"_card_2").show();
+              } else {
+                $("#player_"+this_player_no+"_card_1").attr("src","../User/Stimuli/Cards/back-red.png");
+                $("#player_"+this_player_no+"_card_2").attr("src","../User/Stimuli/Cards/back-red.png");
+                $("#player_"+this_player_no+"_card_1").show();
+                $("#player_"+this_player_no+"_card_2").show();
+              }
+            }
           }
           if(roomobj.players[player].current_pot > max_bid){
             max_bid = roomobj.players[player].current_pot;
@@ -572,7 +593,7 @@ function update_players(){
 
       
       //if your turn, allow you to bid
-      if(your_player.current_bid == "your turn"){
+      if(your_player.current_bid == "your turn" & roomobj.winner.length == 0){
         $("#fold_btn").attr("disabled",false);
         $("#check_call_btn").attr("disabled",false);
         $("#raise_input").attr("disabled",false);
@@ -600,6 +621,14 @@ function update_players(){
         $("#check_call_btn").attr("disabled",true);
         $("#raise_input").attr("disabled",true);
         $("#raise_btn").attr("disabled",true);
+      }
+      if(roomobj.winner.length > 0){
+        var winner_div_html = roomobj.winner.join(" and ") + " won";
+        $("#winner_div").html(winner_div_html);
+        $("#deal_cards").show();
+      } else {
+        $("#winner_div").html("Round in progress");
+        $("#deal_cards").hide();
       }
       
       switch(roomobj.round_phase){
