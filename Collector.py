@@ -289,5 +289,5 @@ for proc in process_iter():
             proc.send_signal(SIGKILL)
             continue
 '''
-eel.start('kitten/index.html', port=8000)
+eel.start('index.html', port=8000)
 
