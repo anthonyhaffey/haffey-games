@@ -728,7 +728,12 @@ function update_players(){
     if(typeof(this_player) == "undefined"){
       $("#player_" + i).hide();
     } else {
-      var player_html = "<h6>" + this_player + "</h6>" +
+      if(roomobj.players[this_player].dealer){
+        dealer_html = "(D)";
+      } else {
+        dealer_html = "";
+      }
+      var player_html = "<h6>" + this_player + dealer_html + "</h6>" +
                         "<h6>Chips: " + roomobj.players[this_player].chips + "</h6>" +
                         "<h6>Bet: "   + roomobj.players[this_player].current_pot + "</h6>" +
                         "<h6>Status: "   + roomobj.players[this_player].current_bid + "</h6>";
