@@ -62,11 +62,24 @@ body, html {
 }
 </style>
 <div id="everything_div">
-  <h1>Haffey Games</h1>
-  <button id="launch_poker" class="btn btn-lg btn-outline-danger">Poker</button>
+  <h1 style="text-align:center">Haffey Games</h1>
+	
+	<table class="table">
+		<thead>
+			<tr>
+				<th scope="col">Game</th>
+				<th scope="col">Client side Code</th>
+				<th scope="col">Server side Code</th>
+				<th scope="col">Other resources</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<th scope="row"><a href="texas_hold_em.html" target="_blank">Texas Hold 'Em</th>
+				<td>download code</td>
+				<td>download code</td>
+				<td>zip with cards</td>
+			</tr>
+		</tbody>
+	</table>
 </div>
-<script>
-$("#launch_poker").on("click",function(){
-window.open("poker.html","_self"); 
-});
-</script>

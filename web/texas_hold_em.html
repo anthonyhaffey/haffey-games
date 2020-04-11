@@ -239,7 +239,7 @@
   
 }
 </style>
-<h1>Room Code:<span id="room_code_span"></span></h1>
+<h1>Room Code: <span id="room_code_span"></span></h1>
 <div id="welcome_screen">
   <h1 class="text-primary">Texas Hold-em</h1>
   <button class="btn btn-primary" id="new_room_btn">New room</button>
@@ -445,48 +445,54 @@ $("#fold_btn").on("click",function(){
 });
 
 $("#join_btn").on("click",function(){
-  settings.this_room = master_sheet.filter(function(row){
-    return row.roomcode == $("#room_code_input").val();
-  })[0];
-  if(typeof(settings.this_room) == "undefined"){
-    bootbox.alert("That's not a recognised room code");
-  } else {
-    settings.collector_code = settings.this_room.collectorcode;
-    bootbox.prompt("What (nick)name do you want to use?",function(player_name){
-      player_name = player_name.toUpperCase();
-      settings.player_name = player_name;
-      var data = {
-        action: "join",
-        collector_code: settings.collector_code,
-        player_name: player_name,
-      }
-      $.ajax({
-        type: 'POST',
-        url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
-        data: data,
-        crossDomain: true,
-        timeout: 120000,
-        success:function(result){
-          //as it stands, this will never happen as Collector doesn't allow posts to it.
-        }
-      })
-      .catch(function(error){
-        //read the google sheet 
-        /*
-        ParseGSX.parseGSX(data.question_id,function(result){
-          show_question(result);
-        });
-        */
-      });
-    });    
-  }
+	
+	bootbox.prompt("What (nick)name do you want to use?",function(player_name){
+		player_name = player_name.toUpperCase();
+		settings.player_name = player_name;
+		var data = {
+			action: "join",
+			room_code: $("#room_code_input").val(),
+			player_name: player_name,
+		}
+		$.ajax({
+			type: 'POST',
+			url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
+			data: data,
+			crossDomain: true,
+			timeout: 120000,
+			success:function(response){
+				console.dir("response");
+				console.dir(response);
+				settings.players = JSON.parse(response);
+				settings.room_code = $("#room_code_input").val();
+				phase="lobby";
+				/*
+				if(response == "success"){
+					settings.room_code = $("#room_code_input").val();
+					phase = "lobby";
+				} else {
+					bootbox.alert(response);
+				}
+				*/
+			}
+		})
+		.catch(function(error){
+			bootbox.alert("Problem connecting to room " +  $("#room_code_input").val() +". Are you sure you've got the correct room code?"); 
+			//read the google sheet 
+			/*
+			ParseGSX.parseGSX(data.question_id,function(result){
+				show_question(result);
+			});
+			*/
+		});
+	});
 });
 $("#new_room_btn").on("click",function(){
   bootbox.prompt("What (nick)name do you want to use?",function(player_name){
     settings.player_name = player_name.toUpperCase();
     var data = {
       action: "create_room",
-      player_name: player_name,
+      player_name: settings.player_name,
     }
     $.ajax({
       type: 'POST',
@@ -495,7 +501,15 @@ $("#new_room_btn").on("click",function(){
       crossDomain: true,
       timeout: 120000,
       success:function(room_info){
-				settings.this_room = JSON.parse(room_info);
+				room_info = JSON.parse(room_info);
+				
+				console.dir("room_info");
+				console.dir(room_info);
+				
+				settings.room_code = room_info.room_code;
+				settings.players = room_info.players;
+				console.dir("settings.players");
+				console.dir(settings.players);
 				phase = "lobby";
       }
     })
@@ -522,12 +536,7 @@ $("#raise_btn").on("click",function(){
     }
   })
   .catch(function(error){
-    //read the google sheet 
-    /*
-    ParseGSX.parseGSX(data.question_id,function(result){
-      show_question(result);
-    });
-    */
+	
   });
 });
 
@@ -552,36 +561,6 @@ player_obj = {
   wipeouts:0,
   current_round:-1
 }
-
-//based on code found at: https://raw.githubusercontent.com/drumwolf/parse-gsx/0ba67bf115eac96e0763777a4fb2c485a35e2daa/parse-gsx-ajax.js
-var ParseGSX = (function() {
-  var _defaultCallback = function(data) {
-    console.log(data);
-  };
-  var _parseRawData = function(res) {
-    var finalData = [];
-    res.feed.entry.forEach(function(entry){
-      var parsedObject = {};
-      for (var key in entry) {
-        if (key.substring(0,4) === "gsx$") {
-          parsedObject[key.slice(4)] = entry[key]["$t"];
-        }
-      }
-      finalData.push(parsedObject);
-    });
-    var processGSXData = _defaultCallback;
-    processGSXData(finalData);
-  };
-  var parseGSX = function(spreadsheetID, callback) {
-    var url = "https://spreadsheets.google.com/feeds/list/" + spreadsheetID + "/od6/public/values?alt=json";
-    var ajax = $.get(url);
-    if (callback) { _defaultCallback = callback; }
-    $.when(ajax).then(_parseRawData);
-  };
-  return { parseGSX: parseGSX };
-})();
-
-
 
 function update_players(){
   function update_your_cards(roomobj){
@@ -739,12 +718,12 @@ function update_players(){
 
 */
 
-var master_sheet;
 function sheet_check(){
+	console.dir("starting loop");
 	switch(phase){
 		case "welcome":
-			
-			setTimeout(function(){
+			//do nothing
+			setTimeout(function(){ //check if you've moved onto lobby
 				sheet_check();
 			},1000);
 			break;
@@ -754,14 +733,19 @@ function sheet_check(){
 			$("#lobby").show();
 			$("#game").hide();
 			
+			settings.players.forEach(function(player){
+				lobby_people_html += "<h2 class='text-primary'>" + player + "</h2>";
+			});
+			/*
 			for(var i = 0; i < 10; i++){
 				if(typeof(settings.this_room["player"+i]) !== "undefined" && 
 									settings.this_room["player"+i] !== ""){
 					lobby_people_html += "<h2 class='text-primary'>" + settings.this_room["player"+i] + "</h2>";
 				}
 			}
+			*/
 			$("#lobby_people").html(lobby_people_html);
-			$("#room_code_span").html(settings.this_room.roomcode);
+			$("#room_code_span").html(settings.room_code);
 
 			if(settings.this_room.everybodyin == "TRUE"){
 				phase = "playing";
@@ -769,9 +753,40 @@ function sheet_check(){
 				$("#game").fadeIn(1000);
 				update_players();
 			}
-			setTimeout(function(){
-				sheet_check();
-			},1000);
+			
+			if(typeof(settings.players) == "undefined"){
+				settings.players = [];
+			}
+			
+			
+			//check if anyone new has joined
+			var data = {
+				action: "new_player_wait",
+				room_code: settings.room_code,
+				players: JSON.stringify(settings.players)
+			}
+			$.ajax({
+				type: 'POST',
+				url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
+				data: data,
+				crossDomain: true,
+				timeout: 120000,
+				success:function(players_update){
+					console.dir("JSON.parse(players_update)");
+					console.dir(JSON.parse(players_update));
+					players_update = JSON.parse(players_update);
+					if(typeof(settings.this_room) == "undefined"){
+						settings.this_room = {};
+					}
+					settings.players = players_update.players;
+					//sheet_check();
+				}
+			})
+			.catch(function(error){
+				console.dir(error);
+				sheet_check(); //assume that the user is still waiting
+			});
+			
 			break;
 		case "playing":
 			update_players(); 
@@ -780,16 +795,6 @@ function sheet_check(){
 			},1000);
 			break;
 	}
-	/*
-  ParseGSX.parseGSX("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g",function(quest_array){
-    master_sheet = quest_array;
-		settings.this_room = master_sheet.filter(function(row){
-      return row.collectorcode == settings.collector_code;
-    })[0];
-    
-		
-  });
-	*/
 }
 sheet_check();
 
