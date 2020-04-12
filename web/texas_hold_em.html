@@ -240,6 +240,7 @@
 }
 </style>
 <h1>Room Code: <span id="room_code_span"></span></h1>
+<h1>Time left: <span id="room_time_span"></span></h1>
 <div id="welcome_screen">
   <h1 class="text-primary">Texas Hold-em</h1>
   <button class="btn btn-primary" id="new_room_btn">New room</button>
@@ -360,8 +361,7 @@ $("#check_call_btn").on("click",function(){
     success:function(this_room){
 			settings.this_room = JSON.parse(this_room);
 			update_players();
-			console.dir(this_room);
-      //as it stands, this will never happen as Collector doesn't allow posts to it.
+			//as it stands, this will never happen as Collector doesn't allow posts to it.
     }
   })
   .catch(function(error){
@@ -412,8 +412,6 @@ $("#everybody_in_btn").on("click",function(){
       success:function(result){
 				phase = "playing";
 				settings.this_room = JSON.parse(result);
-				console.dir("result");
-				console.dir(result);
 				sheet_check();        
       }
     })
@@ -439,7 +437,6 @@ $("#fold_btn").on("click",function(){
     crossDomain: true,
     timeout: 120000,
     success:function(this_room){
-			console.dir(this_room);
 			settings.this_room = JSON.parse(this_room);
 			update_players();
 			//sheet_check();
@@ -459,89 +456,93 @@ $("#fold_btn").on("click",function(){
 $("#join_btn").on("click",function(){
 	
 	bootbox.prompt("What (nick)name do you want to use?",function(player_name){
-		player_name = player_name.toUpperCase();
-		settings.player_name = player_name;
-		var data = {
-			action: "join",
-			room_code: $("#room_code_input").val(),
-			player_name: player_name,
-		}
-		$.ajax({
-			type: 'POST',
-			url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
-			data: data,
-			crossDomain: true,
-			timeout: 120000,
-			success:function(response){
-				console.dir("response");
-				console.dir(response);
-				settings.players = JSON.parse(response);
-				settings.room_code = $("#room_code_input").val();
-				phase = "lobby";
-				var lobby_people_html = "";
-				settings.players.forEach(function(player){
-					lobby_people_html += "<h2 class='text-primary'>" + player + "</h2>";
-				});
-				$("#lobby_people").html(lobby_people_html);
-				$("#room_code_span").html(settings.room_code);
-				
-				//sheet_check();
-				/*
-				if(response == "success"){
+		if(player_name){
+			player_name = player_name.toUpperCase();
+			settings.player_name = player_name;
+			var data = {
+				action: "join",
+				room_code: $("#room_code_input").val(),
+				player_name: player_name,
+			}
+			$.ajax({
+				type: 'POST',
+				url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
+				data: data,
+				crossDomain: true,
+				timeout: 120000,
+				success:function(response){
+					settings.players = JSON.parse(response);
 					settings.room_code = $("#room_code_input").val();
 					phase = "lobby";
-				} else {
-					bootbox.alert(response);
+					var lobby_people_html = "";
+					settings.players.forEach(function(player){
+						lobby_people_html += "<h2 class='text-primary'>" + player + "</h2>";
+					});
+					$("#lobby_people").html(lobby_people_html);
+					$("#room_code_span").html(settings.room_code);
+					
+					
+					//start clock
+					
+					
+					//sheet_check();
+					/*
+					if(response == "success"){
+						settings.room_code = $("#room_code_input").val();
+						phase = "lobby";
+					} else {
+						bootbox.alert(response);
+					}
+					*/
 				}
+			})
+			.catch(function(error){
+				bootbox.alert("Problem connecting to room " +  $("#room_code_input").val() +". Are you sure you've got the correct room code?"); 
+				//read the google sheet 
+				/*
+				ParseGSX.parseGSX(data.question_id,function(result){
+					show_question(result);
+				});
 				*/
-			}
-		})
-		.catch(function(error){
-			bootbox.alert("Problem connecting to room " +  $("#room_code_input").val() +". Are you sure you've got the correct room code?"); 
-			//read the google sheet 
-			/*
-			ParseGSX.parseGSX(data.question_id,function(result){
-				show_question(result);
 			});
-			*/
-		});
+		}		
 	});
 });
 $("#new_room_btn").on("click",function(){
   bootbox.prompt("What (nick)name do you want to use?",function(player_name){
-    settings.player_name = player_name.toUpperCase();
-    var data = {
-      action: "create_room",
-      player_name: settings.player_name,
-    }
-    $.ajax({
-      type: 'POST',
-      url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
-      data: data,
-      crossDomain: true,
-      timeout: 120000,
-      success:function(this_room){
-				this_room = JSON.parse(this_room);
-				
-				console.dir("this_room");
-				console.dir(this_room);
-				
-				settings.room_code = this_room.room_code;
-				settings.players = this_room.players;
-				phase = "lobby";
-				
-				var lobby_people_html = "";
-				settings.players.forEach(function(player){
-					lobby_people_html += "<h2 class='text-primary'>" + player + "</h2>";
-				});
-				$("#lobby_people").html(lobby_people_html);
-				$("#room_code_span").html(settings.room_code);
-				
-      }
-    })
-    .catch(function(error){
-			console.dir(error);
-    });
+		if(player_name){
+			settings.player_name = player_name.toUpperCase();
+			var data = {
+				action: "create_room",
+				player_name: settings.player_name,
+			}
+			$.ajax({
+				type: 'POST',
+				url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
+				data: data,
+				crossDomain: true,
+				timeout: 120000,
+				success:function(this_room){
+					this_room = JSON.parse(this_room);
+					
+					
+					settings.room_code = this_room.room_code;
+					settings.players = this_room.players;
+					phase = "lobby";
+					
+					var lobby_people_html = "";
+					settings.players.forEach(function(player){
+						lobby_people_html += "<h2 class='text-primary'>" + player + "</h2>";
+					});
+					$("#lobby_people").html(lobby_people_html);
+					$("#room_code_span").html(settings.room_code);
+					
+				}
+			})
+			.catch(function(error){
+				console.dir(error);
+			});
+		}
   });
 });
 $("#raise_btn").on("click",function(){
@@ -551,34 +552,34 @@ $("#raise_btn").on("click",function(){
 			max_bid = settings.this_room.players[player].current_pot;
 		}
 	});
-	if($("#raise_input").val() < settings.this_room.small_blind){
-		bootbox.alert("You can't raise less than the small blind of <b>" + settings.this_room.small_blind + "</b>. Your raise hasn't been submitted");
-	} else {
-		if($("#raise_input").val() > max_bid){
-			$("#raise_input").val(max_bid);
-		}
-	  var data = {
-			action: "raise",
-			amount: $("#raise_input").val(),
-			room_code: settings.room_code,
-			player_name: settings.player_name,
-		}
-		$.ajax({
-			type: 'POST',
-			url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
-			data: data,
-			crossDomain: true,
-			timeout: 120000,
-			success:function(this_room){
-				settings.this_room = JSON.parse(this_room);
-				$("#raise_input").val(settings.this_room.small_blind);
-				//sheet_check();
-			}
-		})
-		.catch(function(error){
-		
-		});
+	if($("#raise_input").val() < settings.this_room.small_blind * 2){
+		$("#raise_input").val() = settings.this_room.small_blind * 2;
+	} 
+	if($("#raise_input").val() > max_bid){
+		$("#raise_input").val(max_bid);
 	}
+	var data = {
+		action: "raise",
+		amount: $("#raise_input").val(),
+		room_code: settings.room_code,
+		player_name: settings.player_name,
+	}
+	$.ajax({
+		type: 'POST',
+		url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
+		data: data,
+		crossDomain: true,
+		timeout: 120000,
+		success:function(this_room){
+			settings.this_room = JSON.parse(this_room);
+			$("#raise_input").val(settings.this_room.small_blind);
+			//sheet_check();
+		}
+	})
+	.catch(function(error){
+	
+	});
+
 });
 
 $("#room_code_input").on("input",function(){
@@ -592,7 +593,19 @@ settings={
   raw_deck: {},
   player_cards:{},
   table_cards:[],
-  missing_players_showing:true
+  missing_players_showing:true,
+	clock_waiting: true,
+	timer_left:9000,
+	start_clock: function(){
+		if(settings.clock_waiting){
+			settings.clock_waiting = false;
+			setInterval(function(){
+				settings.timer_left--;				
+				var formatted_time = Math.floor(settings.timer_left/3600) + " hours; " +  Math.floor((settings.timer_left % 3600)/60) + " mins; " + Math.floor(settings.timer_left % 60) + " secs";				
+				$("#room_time_span").html(formatted_time);
+			},1000);
+		}
+	}
 }
 
 
@@ -604,6 +617,7 @@ player_obj = {
 }
 
 function update_players(){
+	settings.start_clock();
   function update_your_cards(roomobj){
     var your_player = roomobj.players[settings.player_name];
     //var card_1 = ;
@@ -651,8 +665,6 @@ function update_players(){
       
       //if your turn, allow you to bid
       if(your_player.current_bid == "your turn" & roomobj.winner.length == 0){
-				console.dir("your_player");
-				console.dir(your_player);
 				
 				$("#player_" + your_player.player_no).removeClass("text-danger");
 				$("#player_" + your_player.player_no).addClass("text-white");
@@ -847,12 +859,12 @@ function sheet_check(){
 				success:function(this_room){
 					settings.this_room = JSON.parse(this_room);
 					update_players();
+					$("#room_code_span").html(settings.room_code);
 					sheet_check();
 				}
 			})
 			.catch(function(error){
-				//alert("breaking");
-				//sheet_check();
+				sheet_check();
 			});
 			
 			
