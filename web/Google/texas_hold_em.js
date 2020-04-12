@@ -181,6 +181,10 @@ function raise(room_code,
   
   var roomobj = JSON.parse(cache.get(room_code));
   
+  if(roomobj.players[player_name].current_bid !== "your turn"){
+    return JSON.stringify(roomobj);
+  }
+  
   
   var max_bid = -1;
   Object.keys(roomobj.players).forEach(function(player){
@@ -190,7 +194,7 @@ function raise(room_code,
   });
   
   if(parseFloat(max_bid) + parseFloat(raise_amount) > roomobj.players[player_name].chips - parseFloat(roomobj.players[player_name].current_pot)){
-    raise_amount-= (parseFloat(max_bid) + parseFloat(raise_amount)) - (roomobj.players[player_name].chips - parseFloat(roomobj.players[player_name].current_pot));
+    raise_amount-= (parseFloat(max_bid) + parseFloat(raise_amount)) - (roomobj.players[player_name].chips); // -parseFloat(roomobj.players[player_name].current_pot)
   }
   
   roomobj.players[player_name].chips-= parseFloat(raise_amount) + parseFloat(max_bid) - parseFloat(roomobj.players[player_name].current_pot);
@@ -234,6 +238,10 @@ function check_call(room_code,
   
   var cache = CacheService.getScriptCache();
   var roomobj = JSON.parse(cache.get(room_code));
+  
+  if(roomobj.players[player_name].current_bid !== "your turn"){
+    return JSON.stringify(roomobj);
+  }
   
   var max_bid = -1;
   Object.keys(roomobj.players).forEach(function(player){
@@ -695,7 +703,12 @@ function fold(room_code,
   
   var cache = CacheService.getScriptCache();
   var roomobj = JSON.parse(cache.get(room_code))
- 
+
+  
+  if(roomobj.players[player_name].current_bid !== "your turn"){
+    return JSON.stringify(roomobj);
+  }
+  
   roomobj.players[player_name].current_bid = "fold";
 
   
@@ -1002,271 +1015,3 @@ function shuffle(array) {
 
   return array;
 }
-
-
-/* backup of redundant scoring code
-var hand_ranks = {
-    "high card":{
-      rank:0      // done
-    },
-    "one pair":{      // done
-      rank:1
-    },
-    "two pairs":{    //done
-      rank:2
-    },
-    "three of a kind":{    //done
-      rank:3
-    },
-    "straight":{  //done
-      rank:4
-    },
-    "flush":{      //done
-      rank:5
-    },
-    "full house":{ //done
-      rank:6
-    },
-    "four of a kind":{ //done
-      rank:7
-    },
-    "straight flush":{ //done
-      rank:8
-    }
-  }
-
-      var this_rank = hand_ranks[hand_description].rank;
-      if(this_rank > winning_player.rank){
-        winning_player.player = player;
-        winning_player.rank = this_rank;
-        winning_player.hand = player_best_hand;
-        winning_player.draw_player = [];
-          
-      } else if(this_rank == hand_ranks[hand_description].rank){
-        //need to resolve draw
-        switch(hand_description){
-          case "straight_flush":
-          case "straight":
-            //need to see what the highest card was for each player
-            var old_player_max = winning_player.hand[4];
-            var new_player_max = player_best_hand[4];
-            if(old_player_max < new_player_max){
-              winning_player.player = player;
-              winning_player.rank = this_rank;
-              winning_player.hand = player_best_hand;
-              winning_player.draw_player = [];
-            } else if(old_player_max == new_player_max){
-              winning_player.draw_player.push(player);
-            }
-            //else ignore the new player
-            
-            break;
-          case "three of a kind":
-            var old_player_three = winning_player.hand.three;
-            var new_player_three = player_best_hand.three;
-            
-            var old_player_high_1 = winning_player.hand.high_1;
-            var new_player_high_1 = player_best_hand.high_1;
-            
-            var old_player_high_2 = winning_player.hand.high_2;
-            var new_player_high_2 = player_best_hand.high_2;
-            
-            if(old_player_three < new_player_three){
-              winning_player.player = player;
-              winning_player.rank = this_rank;
-              winning_player.hand = player_best_hand;
-              winning_player.draw_player = [];
-            } else if(old_player_three == new_player_three){
-              if(old_player_high_1 < new_player_high_1){
-                winning_player.player = player;
-                winning_player.rank = this_rank;
-                winning_player.hand = player_best_hand;
-                winning_player.draw_player = [];
-              } else if(old_player_high_1 == new_player_high_1){
-                if(old_player_high_2 < new_player_high_2){
-                  winning_player.player = player;
-                  winning_player.rank = this_rank;
-                  winning_player.hand = player_best_hand;
-                  winning_player.draw_player = [];
-                } else if(old_player_high_2 == new_player_high_2){
-                  winning_player.draw_player.push(player);
-                } 
-              }
-            }
-            //else ignore the new player
-                
-            break;
-          case "two pairs":
-            var old_player_pair_1 = winning_player.hand.pair_1;
-            var new_player_pair_1 = player_best_hand.pair_1;
-            
-            var old_player_pair_2 = winning_player.hand.pair_2;
-            var new_player_pair_2 = player_best_hand.pair_2;
-            
-            var old_player_high = winning_player.hand.high;
-            var new_player_high = player_best_hand.high;
-            
-            if(old_player_pair_2 < new_player_pair_2){
-              winning_player.player = player;
-              winning_player.rank = this_rank;
-              winning_player.hand = player_best_hand;
-              winning_player.draw_player = [];
-            } else if(old_player_pair_2 == new_player_pair_2){
-              if(old_player_pair_1 < new_player_pair_1){
-                winning_player.player = player;
-                winning_player.rank = this_rank;
-                winning_player.hand = player_best_hand;
-                winning_player.draw_player = [];
-              } else if(old_player_pair_1 == new_player_pair_1){
-                if(old_player_high < new_player_high){
-                  winning_player.player = player;
-                  winning_player.rank = this_rank;
-                  winning_player.hand = player_best_hand;
-                  winning_player.draw_player = [];
-                } else if(old_player_high == new_player_high){
-                  winning_player.draw_player.push(player);
-                } 
-              }
-            }
-            //else ignore the new player
-                
-            break;
-          case "full house":
-            var old_player_three = winning_player.hand.three;
-            var new_player_three = player_best_hand.three;
-            
-            var old_player_two = winning_player.hand.two;
-            var new_player_two = player_best_hand.two;
-            
-            if(old_player_three < new_player_three){
-              winning_player.player = player;
-              winning_player.rank = this_rank;
-              winning_player.hand = player_best_hand;
-              winning_player.draw_player = [];
-            } else if(old_player_three == new_player_three){
-              if(old_player_two < new_player_two){
-                winning_player.player = player;
-                winning_player.rank = this_rank;
-                winning_player.hand = player_best_hand;
-                winning_player.draw_player = [];
-              } else if(old_player_two == new_player_two){
-                winning_player.draw_player.push(player); 
-              }
-            }
-            //else ignore the new player
-                
-            break;
-          case "four of a kind":
-            var old_player_four = winning_player.hand.four;
-            var new_player_four = player_best_hand.four;
-            
-            var old_player_high = winning_player.hand.high;
-            var new_player_high = player_best_hand.high;
-            
-            if(old_player_four < new_player_four){
-              winning_player.player = player;
-              winning_player.rank = this_rank;
-              winning_player.hand = player_best_hand;
-              winning_player.draw_player = [];
-            } else if(old_player_four == new_player_four){
-              if(old_player_high < new_player_high){
-                winning_player.player = player;
-                winning_player.rank = this_rank;
-                winning_player.hand = player_best_hand;
-                winning_player.draw_player = [];
-              } else if(old_player_high == new_player_high){
-                winning_player.draw_player.push(player); 
-              }
-            }
-            //else ignore the new player
-                
-            break;
-          case "one pair":
-            var old_player_pair = winning_player.hand.pair;
-            var new_player_pair = player_best_hand.pair;
-            
-            var old_player_high_1 = winning_player.hand.high_1;
-            var new_player_high_1 = player_best_hand.high_1;
-
-            var old_player_high_2 = winning_player.hand.high_2;
-            var new_player_high_2 = player_best_hand.high_2;
-
-            var old_player_high_3 = winning_player.hand.high_3;
-            var new_player_high_3 = player_best_hand.high_3;
-            
-            if(old_player_pair < new_player_pair){
-              winning_player.player = player;
-              winning_player.rank = this_rank;
-              winning_player.hand = player_best_hand;
-              winning_player.draw_player = [];
-            } else if(old_player_pair == new_player_pair){
-              if(old_player_high_1 < new_player_high_1){
-                winning_player.player = player;
-                winning_player.rank = this_rank;
-                winning_player.hand = player_best_hand;
-                winning_player.draw_player = [];
-              } else if(old_player_high_1 == new_player_high_1){
-                if(old_player_high_2 < new_player_high_2){
-                  winning_player.player = player;
-                  winning_player.rank = this_rank;
-                  winning_player.hand = player_best_hand;
-                  winning_player.draw_player = [];
-                } else if(old_player_high_2 == new_player_high_2){
-                  if(old_player_high_3 < new_player_high_3){
-                    winning_player.player = player;
-                    winning_player.rank = this_rank;
-                    winning_player.hand = player_best_hand;
-                    winning_player.draw_player = [];
-                  } else if(old_player_high_3 == new_player_high_3){
-                    winning_player.draw_player.push(player);
-                  }
-                } 
-              }
-            }
-            //else ignore the new player
-                
-            break;  
-          case "flush":
-          case "high card":
-            if(winning_player.hand[4] < player_best_hand[4]){
-              winning_player.player = player;
-              winning_player.rank = this_rank;
-              winning_player.hand = player_best_hand;
-              winning_player.draw_player = [];
-            } else if(winning_player.hand[4] == player_best_hand[4]){
-              if(winning_player.hand[3] < player_best_hand[3]){
-                winning_player.player = player;
-                winning_player.rank = this_rank;
-                winning_player.hand = player_best_hand;
-                winning_player.draw_player = [];
-              } else if(winning_player.hand[3] == player_best_hand[3]){
-                if(winning_player.hand[2] < player_best_hand[2]){
-                  winning_player.player = player;
-                  winning_player.rank = this_rank;
-                  winning_player.hand = player_best_hand;
-                  winning_player.draw_player = [];
-                } else if(winning_player.hand[2] == player_best_hand[2]){
-                  if(winning_player.hand[1] < player_best_hand[1]){
-                    winning_player.player = player;
-                    winning_player.rank = this_rank;
-                    winning_player.hand = player_best_hand;
-                    winning_player.draw_player = [];
-                  } else if(winning_player.hand[1] == player_best_hand[1]){
-                    if(winning_player.hand[0] < player_best_hand[0]){
-                      winning_player.player = player;
-                      winning_player.rank = this_rank;
-                      winning_player.hand = player_best_hand;
-                      winning_player.draw_player = [];
-                    } else if(winning_player.hand[0] == player_best_hand[0]){
-                      winning_player.draw_player.push(player);
-                    }
-                  }
-                }
-              }
-            }
-        
-            break;
-        }        
-      }
-      
-      */

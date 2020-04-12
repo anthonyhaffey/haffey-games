@@ -545,27 +545,40 @@ $("#new_room_btn").on("click",function(){
   });
 });
 $("#raise_btn").on("click",function(){
-  var data = {
-    action: "raise",
-    amount: $("#raise_input").val(),
-    room_code: settings.room_code,
-    player_name: settings.player_name,
-  }
-  $.ajax({
-    type: 'POST',
-    url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
-    data: data,
-    crossDomain: true,
-    timeout: 120000,
-    success:function(this_room){
-			settings.this_room = JSON.parse(this_room);
-			$("#raise_input").val(0);
-			//sheet_check();
-    }
-  })
-  .catch(function(error){
-	
-  });
+	var max_bid = settings.this_room.small_blind * 2;
+	Object.keys(settings.this_room.players).forEach(function(player){
+		if(settings.this_room.players[player].current_pot > max_bid){
+			max_bid = settings.this_room.players[player].current_pot;
+		}
+	});
+	if($("#raise_input").val() < settings.this_room.small_blind){
+		bootbox.alert("You can't raise less than the small blind of <b>" + settings.this_room.small_blind + "</b>. Your raise hasn't been submitted");
+	} else {
+		if($("#raise_input").val() > max_bid){
+			$("#raise_input").val(max_bid);
+		}
+	  var data = {
+			action: "raise",
+			amount: $("#raise_input").val(),
+			room_code: settings.room_code,
+			player_name: settings.player_name,
+		}
+		$.ajax({
+			type: 'POST',
+			url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
+			data: data,
+			crossDomain: true,
+			timeout: 120000,
+			success:function(this_room){
+				settings.this_room = JSON.parse(this_room);
+				$("#raise_input").val(settings.this_room.small_blind);
+				//sheet_check();
+			}
+		})
+		.catch(function(error){
+		
+		});
+	}
 });
 
 $("#room_code_input").on("input",function(){
