@@ -555,9 +555,11 @@ $("#raise_btn").on("click",function(){
 	if($("#raise_input").val() < settings.this_room.small_blind * 2){
 		$("#raise_input").val() = settings.this_room.small_blind * 2;
 	} 
+	
 	if($("#raise_input").val() > max_bid){
 		$("#raise_input").val(max_bid);
 	}
+	
 	var data = {
 		action: "raise",
 		amount: $("#raise_input").val(),
@@ -746,8 +748,9 @@ function update_players(){
       
     }
   }
+	
   var roomobj = settings.this_room;
-  for(var i = 0; i< 10; i++){
+	for(var i = 0; i< 10; i++){
     var this_player = Object.keys(roomobj.players).filter(function(player){
       return roomobj.players[player].player_no == i
     })[0];
@@ -771,7 +774,7 @@ function update_players(){
       update_your_cards(roomobj);
       
     }
-  }
+  };
 }
 
 /*
