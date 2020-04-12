@@ -321,7 +321,7 @@
     <button class="btn btn-danger" id="fold_btn">Fold</button>
     <button class="btn btn-danger" id="check_call_btn">Check</button>
     <div class="input-group mb-3">
-      <input type="text" class="form-control" aria-label="raise_btn" id="raise_input">
+      <input type="number" class="form-control" aria-label="raise_btn" id="raise_input">
       <div class="input-group-append">
         <button class="input-group-text btn-raise" id="raise_btn">Raise</button>
       </div>
@@ -348,7 +348,7 @@ phases = [
 $("#check_call_btn").on("click",function(){
   var data = {
     action: "check_call",
-    collector_code: settings.collector_code,
+    room_code: settings.room_code,
     player_name: settings.player_name,
   }
   $.ajax({
@@ -357,7 +357,10 @@ $("#check_call_btn").on("click",function(){
     data: data,
     crossDomain: true,
     timeout: 120000,
-    success:function(result){
+    success:function(this_room){
+			settings.this_room = JSON.parse(this_room);
+			update_players();
+			console.dir(this_room);
       //as it stands, this will never happen as Collector doesn't allow posts to it.
     }
   })
@@ -373,7 +376,7 @@ $("#check_call_btn").on("click",function(){
 $("#deal_cards").on("click",function(){
   var data = {
     action: "deal",
-    collector_code: settings.collector_code
+    room_code: settings.room_code
   }
   $.ajax({
     type: 'POST',
@@ -382,6 +385,7 @@ $("#deal_cards").on("click",function(){
     crossDomain: true,
     timeout: 120000,
     success:function(result){
+			settings.this_room = JSON.parse(result);			
       //as it stands, this will never happen as Collector doesn't allow posts to it.
     }
   })
@@ -397,7 +401,7 @@ $("#deal_cards").on("click",function(){
 $("#everybody_in_btn").on("click",function(){
   var data = {
       action: "everybody_in",
-      collector_code: settings.collector_code,
+      room_code: settings.room_code,
     }
     $.ajax({
       type: 'POST',
@@ -406,7 +410,11 @@ $("#everybody_in_btn").on("click",function(){
       crossDomain: true,
       timeout: 120000,
       success:function(result){
-        //as it stands, this will never happen as Collector doesn't allow posts to it.
+				phase = "playing";
+				settings.this_room = JSON.parse(result);
+				console.dir("result");
+				console.dir(result);
+				sheet_check();        
       }
     })
     .catch(function(error){
@@ -421,7 +429,7 @@ $("#everybody_in_btn").on("click",function(){
 $("#fold_btn").on("click",function(){
   var data = {
     action: "fold",
-    collector_code: settings.collector_code,
+    room_code: settings.room_code,
     player_name: settings.player_name,
   }
   $.ajax({
@@ -430,7 +438,11 @@ $("#fold_btn").on("click",function(){
     data: data,
     crossDomain: true,
     timeout: 120000,
-    success:function(result){
+    success:function(this_room){
+			console.dir(this_room);
+			settings.this_room = JSON.parse(this_room);
+			update_players();
+			//sheet_check();
       //as it stands, this will never happen as Collector doesn't allow posts to it.
     }
   })
@@ -465,7 +477,15 @@ $("#join_btn").on("click",function(){
 				console.dir(response);
 				settings.players = JSON.parse(response);
 				settings.room_code = $("#room_code_input").val();
-				phase="lobby";
+				phase = "lobby";
+				var lobby_people_html = "";
+				settings.players.forEach(function(player){
+					lobby_people_html += "<h2 class='text-primary'>" + player + "</h2>";
+				});
+				$("#lobby_people").html(lobby_people_html);
+				$("#room_code_span").html(settings.room_code);
+				
+				//sheet_check();
 				/*
 				if(response == "success"){
 					settings.room_code = $("#room_code_input").val();
@@ -500,17 +520,23 @@ $("#new_room_btn").on("click",function(){
       data: data,
       crossDomain: true,
       timeout: 120000,
-      success:function(room_info){
-				room_info = JSON.parse(room_info);
+      success:function(this_room){
+				this_room = JSON.parse(this_room);
 				
-				console.dir("room_info");
-				console.dir(room_info);
+				console.dir("this_room");
+				console.dir(this_room);
 				
-				settings.room_code = room_info.room_code;
-				settings.players = room_info.players;
-				console.dir("settings.players");
-				console.dir(settings.players);
+				settings.room_code = this_room.room_code;
+				settings.players = this_room.players;
 				phase = "lobby";
+				
+				var lobby_people_html = "";
+				settings.players.forEach(function(player){
+					lobby_people_html += "<h2 class='text-primary'>" + player + "</h2>";
+				});
+				$("#lobby_people").html(lobby_people_html);
+				$("#room_code_span").html(settings.room_code);
+				
       }
     })
     .catch(function(error){
@@ -522,8 +548,8 @@ $("#raise_btn").on("click",function(){
   var data = {
     action: "raise",
     amount: $("#raise_input").val(),
-    collector_code: settings.collector_code,
-    player_name: settings.player_name, 
+    room_code: settings.room_code,
+    player_name: settings.player_name,
   }
   $.ajax({
     type: 'POST',
@@ -531,8 +557,9 @@ $("#raise_btn").on("click",function(){
     data: data,
     crossDomain: true,
     timeout: 120000,
-    success:function(result){
-      //as it stands, this will never happen as Collector doesn't allow posts to it.
+    success:function(this_room){
+			settings.this_room = JSON.parse(this_room);
+			//sheet_check();
     }
   })
   .catch(function(error){
@@ -545,7 +572,7 @@ $("#room_code_input").on("input",function(){
 });
 
 settings={
-  collector_code: "tbc",
+  room_code: "tbc",
   player_name: "tbc",
   this_room: "tbc",
   raw_deck: {},
@@ -639,7 +666,7 @@ function update_players(){
         $("#raise_btn").attr("disabled",true);
       }
       if(roomobj.winner.length > 0){
-        var winner_div_html = roomobj.winner.join(" and ") + " won";
+        var winner_div_html = roomobj.winner.join(" and ") + " won with " + roomobj.winning_hand;
         $("#winner_div").html(winner_div_html);
         $("#deal_cards").show();
       } else {
@@ -681,7 +708,7 @@ function update_players(){
       
     }
   }
-  var roomobj = JSON.parse(settings.this_room.roomobj);
+  var roomobj = settings.this_room;
   for(var i = 0; i< 10; i++){
     var this_player = Object.keys(roomobj.players).filter(function(player){
       return roomobj.players[player].player_no == i
@@ -728,35 +755,9 @@ function sheet_check(){
 			},1000);
 			break;
 		case "lobby":
-			var lobby_people_html = "";
 			$("#welcome_screen").hide();
 			$("#lobby").show();
 			$("#game").hide();
-			
-			settings.players.forEach(function(player){
-				lobby_people_html += "<h2 class='text-primary'>" + player + "</h2>";
-			});
-			/*
-			for(var i = 0; i < 10; i++){
-				if(typeof(settings.this_room["player"+i]) !== "undefined" && 
-									settings.this_room["player"+i] !== ""){
-					lobby_people_html += "<h2 class='text-primary'>" + settings.this_room["player"+i] + "</h2>";
-				}
-			}
-			*/
-			$("#lobby_people").html(lobby_people_html);
-			$("#room_code_span").html(settings.room_code);
-
-			if(settings.this_room.everybodyin == "TRUE"){
-				phase = "playing";
-				$("#lobby").hide();
-				$("#game").fadeIn(1000);
-				update_players();
-			}
-			
-			if(typeof(settings.players) == "undefined"){
-				settings.players = [];
-			}
 			
 			
 			//check if anyone new has joined
@@ -771,15 +772,26 @@ function sheet_check(){
 				data: data,
 				crossDomain: true,
 				timeout: 120000,
-				success:function(players_update){
-					console.dir("JSON.parse(players_update)");
-					console.dir(JSON.parse(players_update));
-					players_update = JSON.parse(players_update);
-					if(typeof(settings.this_room) == "undefined"){
-						settings.this_room = {};
-					}
-					settings.players = players_update.players;
-					//sheet_check();
+				success:function(this_room){
+					
+					if(typeof(JSON.parse(this_room).small_blind) !== "undefined"){						
+						settings.this_room = JSON.parse(this_room);
+						settings.room_code = settings.this_room.room_code;
+						settings.players = settings.this_room.players;
+						phase = "playing";
+						$("#lobby").hide();
+						$("#game").fadeIn(1000);
+					} else {
+						var lobby_people_html = "";
+						this_room = JSON.parse(this_room);					
+						settings.players = this_room.players;		
+						settings.players.forEach(function(player){
+							lobby_people_html += "<h2 class='text-primary'>" + player + "</h2>";
+						});
+						$("#lobby_people").html(lobby_people_html);
+						$("#room_code_span").html(settings.room_code);
+					}					
+					sheet_check();
 				}
 			})
 			.catch(function(error){
@@ -789,10 +801,36 @@ function sheet_check(){
 			
 			break;
 		case "playing":
-			update_players(); 
-			setTimeout(function(){
-				sheet_check();
-			},1000);
+			update_players();
+			$("#welcome_screen").hide();
+			$("#lobby").hide();
+			$("#game").show();
+			
+			var data = {
+				action: "turn_wait",
+				room_code: settings.room_code,
+				this_room: JSON.stringify(settings.this_room),
+				
+			}
+			$.ajax({
+				type: 'POST',
+				url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
+				data: data,
+				crossDomain: true,
+				timeout: 120000,
+				success:function(this_room){
+					settings.this_room = JSON.parse(this_room);
+					update_players();
+					sheet_check();
+				}
+			})
+			.catch(function(error){
+				//alert("breaking");
+				//sheet_check();
+			});
+			
+			
+			
 			break;
 	}
 }
