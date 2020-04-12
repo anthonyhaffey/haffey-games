@@ -6,20 +6,7 @@ function doPost(e){
   return initiate(e);
 }
 
-function pilot_cache(){
-  var cache = CacheService.getScriptCache();
-  var cached = cache.get("room_code");
-  if (cached != null) {
-    return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JAVASCRIPT);
-  }
-  cache.put("room_code","beepbop",1500);
-}
-
 function initiate(e) {
-  
-  
-  
-  
   var master_sheet = SpreadsheetApp.openById("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g");
       master_sheet = master_sheet.getSheetByName('Sheet1');
       
@@ -32,110 +19,167 @@ function initiate(e) {
   
   
   switch(action){
-    case "check_cache":
-      //return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.JAVASCRIPT);
-      
-      var cache = CacheService.getScriptCache();
-      var cached = cache.get("room_code");
-      if (cached != null) {
-        return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JAVASCRIPT);
-      }
-      cached.put("room_code","beepbop",1500);
-      break;
-      
     case "check_call":
-      
-      return check_call(response.collector_code,
-                        response.player_name);
-      
+      return valid_return(check_call(response.room_code,
+                                     response.player_name));
       break;
     case "create_room":
-      return create_room(response.player_name);
+      return valid_return(create_room(response.player_name));
       break;
     case "deal":
-      var game_row = rowOfValue(master_sheet,   //looking within this
-                            response.collector_code, //looking for this
-                            0);             //looking in this column      
-      deal_cards(fill_deck(),game_row);
+      var cache = CacheService.getScriptCache();
+      var roomobj = JSON.parse(cache.get(response.room_code));
+      
+      roomobj = deal_cards(fill_deck(),roomobj)
+      
+      cache.put(response.room_code,JSON.stringify(roomobj))
+      
+      return valid_return(JSON.stringify(roomobj));
       
       break;
     case "everybody_in":
-      everybody_in(response.collector_code);
+      return valid_return(everybody_in(response.room_code));
       break;
     case "fold":
-      fold(response.collector_code,
-           response.player_name);
+      return valid_return(fold(response.room_code,
+                               response.player_name));
     case "join":
-      join_room(response.collector_code,
-                response.player_name);
+      return valid_return(join_room(response.room_code,
+                                    response.player_name));
       break;
+    case "new_player_wait":
+      return valid_return(new_player_wait(response.room_code,
+                                          response.players));
+      break;                              
     case "raise":
-      raise(response.collector_code,
-            response.player_name,
-            response.amount);
+      return valid_return(raise(response.room_code,
+                                response.player_name,
+                                response.amount));
+      break;
+    case "turn_wait":
+      return valid_return(turn_wait(response.room_code,
+                                    response.this_room));
+      break;
+  }
+  
+}
+
+function pilot_turn_wait(){
+  var cache = CacheService.getScriptCache();
+  
+  turn_wait("VRRQ",
+            cache.get("VRRQ"));
+  
+}
+
+function turn_wait(room_code,
+                   this_room){
+  
+  
+  //return room_info;
+  
+  var cache = CacheService.getScriptCache();
+  var this_room = JSON.parse(this_room);
+  var old_round = this_room.round;
+  var turn_waiting = true;
+  
+  
+  while(turn_waiting){
+    Utilities.sleep(1000);
+    var local_cached = JSON.parse(cache.get(room_code));
+    if(JSON.stringify(local_cached.round) !== JSON.stringify(old_round)){
+      turn_waiting = false;
+      return JSON.stringify(local_cached);
+    }
   }
   
 }
 
 
 
-function load_room(room_code){
+function pilot_join_room(){
+  join_room("A0VZ",
+            "BOB");
+}
+function join_room(room_code,
+                   player_name){
   
+  
+  //return room_code;
+  
+  var cache = CacheService.getScriptCache();
+  var cached = JSON.parse(cache.get(room_code));
+  
+  
+  if(typeof(cached.players.length) !== "undefined" && cached.players.indexOf(player_name) == -1){
+    cached.players.push(player_name);    
+  }
+  
+  cache.put(room_code,JSON.stringify(cached));
+  return JSON.stringify(cached.players);
 }
 
+function valid_return(content){
+  return ContentService.createTextOutput(content).setMimeType(ContentService.MimeType.JAVASCRIPT); 
+}
 
-function update_room(room_code,
-                     room_obj){
-  var filename = room_code + ".json";
-  var folder = getOrCreateSubFolder('TexasHoldEm','apps');
-  try {
-    // filename is unique, so we can get first element of iterator
-    var file = folder.getFilesByName(filename).next()
-    file.setContent(JSON.stringify(room_obj));
-  } catch(e) {
-    folder.createFile(filename, JSON.stringify(room_obj));
+function pilot_new_player_wait(){
+  new_player_wait("DOY0",["ANT"]);
+}
+
+function fresh_update(your_variable, random_seed){
+  
+  return your_variable;
+}
+
+function new_player_wait(room_code,
+                         players){
+  
+  players = JSON.parse(players);
+  
+  var cache = CacheService.getScriptCache();
+  
+  
+  var cached = JSON.parse(cache.get(room_code));
+  
+  var keep_searching = true;
+  if (cached !== null) {
+    
+    while(keep_searching){
+      Utilities.sleep(1000); 
+      
+      var loop_cached = fresh_update(JSON.parse(cache.get(room_code)));
+            
+      if(loop_cached.players.length > players.length){
+        keep_searching = false;
+        
+        return JSON.stringify(loop_cached);
+      } else if(typeof(loop_cached.dealer) !== "undefined"){
+        keep_searching = false;
+        return JSON.stringify(loop_cached);
+      }
+    }    
+  } else {
+    return "room doesn't exist";
   }
 }
 
-//solution by k4k4sh1 at https://stackoverflow.com/questions/48516036/how-to-check-if-a-folder-exists-in-a-parent-folder-using-app-script
-
-function getOrCreateSubFolder(childFolderName, parentFolderName) {
-  var parentFolder, parentFolders;
-  var childFolder, childFolders;
-  // Gets FolderIterator for parentFolder
-  parentFolders = DriveApp.getFoldersByName(parentFolderName);
-  // Checks if FolderIterator has Folders with given name
-  //Assuming there's only a parentFolder with given name...  
-  while (parentFolders.hasNext()) {
-    parentFolder = parentFolders.next();
-  }
-  // If parentFolder is not defined it sets it to root folder
-  if (!parentFolder) { parentFolder = DriveApp.getRootFolder(); }
-  // Gets FolderIterator for childFolder
-  childFolders = parentFolder.getFoldersByName(childFolderName);
-  // Checks if FolderIterator has Folders with given name
-  //Assuming there's only a childFolder with given name...  
-  while (childFolders.hasNext()) {
-    childFolder = childFolders.next();
-  }
-  // If childFolder is not defined it creates it inside the parentFolder
-  if (!childFolder) { parentFolder.createFolder(childFolderName); }
-  return childFolder;
+function pilot_raise(){
+  raise("VNUB",
+        "BOB",
+        10)
 }
 
-function raise(collector_code,
+function raise(room_code,
                player_name,
                raise_amount){
   
-  
   player_name = player_name.toUpperCase();
   
-  var master_sheet = SpreadsheetApp.openById("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g");
-  master_sheet = master_sheet.getSheetByName('Sheet1');
-  var game_row = rowOfValue(master_sheet,   //looking within this
-                            collector_code, //looking for this
-                            0);             //looking in this column
-  var roomobj = JSON.parse(master_sheet.getRange(game_row,3).getValues()[0]);
+  var cache = CacheService.getScriptCache();
+  
+  
+  var roomobj = JSON.parse(cache.get(room_code));
   
   
   var max_bid = -1;
@@ -164,15 +208,10 @@ function raise(collector_code,
       current_bets.push(roomobj.players[player].last_bet);
     }
   });
-  master_sheet.getRange(1,18).setValue("hi - " + JSON.stringify(current_bets));
   if(current_bets.every( (val, i, arr) => val === arr[0] )){ //i.e. there are at least 2 people with equal bets so move onto the next round
-    //master_sheet.getRange(1,18).setValue("hi - " + JSON.stringify(current_bets));
     roomobj.round_phase++;
     if(roomobj.round_phase > 3){
       roomobj = resolve_bets(roomobj);
-      master_sheet.getRange(1,19).setValue("HIHIHI");
-      master_sheet.getRange(game_row,3).setValue(JSON.stringify(roomobj));
-      
     } else {
       roomobj = round_progress(roomobj);
     }
@@ -180,28 +219,21 @@ function raise(collector_code,
   } else {
     roomobj = next_player(roomobj);  
   }
-  
-  
-  master_sheet.getRange(game_row,3).setValue(JSON.stringify(roomobj));
-  
-  
+  cache.put(room_code,JSON.stringify(roomobj));
+  return JSON.stringify(roomobj);
 }
 
 function pilot_check_call(){
-  check_call("kKCU0NeAw6Q3","ANT");
+  check_call("VDHS","ANT");
 }
 
-function check_call(collector_code,
+function check_call(room_code,
                     player_name){
   
   player_name = player_name.toUpperCase();
   
-  var master_sheet = SpreadsheetApp.openById("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g");
-  master_sheet = master_sheet.getSheetByName('Sheet1');
-  var game_row = rowOfValue(master_sheet,   //looking within this
-                            collector_code, //looking for this
-                            0);             //looking in this column
-  var roomobj = JSON.parse(master_sheet.getRange(game_row,3).getValues()[0]);
+  var cache = CacheService.getScriptCache();
+  var roomobj = JSON.parse(cache.get(room_code));
   
   var max_bid = -1;
   Object.keys(roomobj.players).forEach(function(player){
@@ -223,15 +255,12 @@ function check_call(collector_code,
       current_bets.push(roomobj.players[player].last_bet);
     }
   });
-  master_sheet.getRange(1,18).setValue("hi - " + JSON.stringify(current_bets));
   if(current_bets.every( (val, i, arr) => val === arr[0] )){ //i.e. there are at least 2 people with equal bets so move onto the next round
     //master_sheet.getRange(1,18).setValue("hi - " + JSON.stringify(current_bets));
     roomobj.round_phase++;
     if(roomobj.round_phase > 3){
       roomobj = resolve_bets(roomobj);
-      master_sheet.getRange(1,19).setValue("HIHIHI");
-      master_sheet.getRange(game_row,3).setValue(JSON.stringify(roomobj));
-      
+      roomobj.round[2]++;
     } else {
       roomobj = round_progress(roomobj);
     }
@@ -240,11 +269,9 @@ function check_call(collector_code,
     roomobj = next_player(roomobj);  
   }
   
+  cache.put(room_code,JSON.stringify(roomobj));
   
-  master_sheet.getRange(game_row,3).setValue(JSON.stringify(roomobj));
-  
-  
-  return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.JAVASCRIPT);
+  return JSON.stringify(roomobj);
   
 } 
 
@@ -659,20 +686,16 @@ function round_progress(roomobj){
 }
 
 function pilot_fold(){
-  fold("XA4zg6YsotCD","BOB");
+  fold("KATY","BOB");
 }
 
-function fold(collector_code,
+function fold(room_code,
               player_name){
   player_name = player_name.toUpperCase();
   
-  var master_sheet = SpreadsheetApp.openById("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g");
-  master_sheet = master_sheet.getSheetByName('Sheet1');
-  var game_row = rowOfValue(master_sheet,   //looking within this
-                            collector_code, //looking for this
-                            0);             //looking in this column
-  var roomobj = JSON.parse(master_sheet.getRange(game_row,3).getValues()[0]);
-  
+  var cache = CacheService.getScriptCache();
+  var roomobj = JSON.parse(cache.get(room_code))
+ 
   roomobj.players[player_name].current_bid = "fold";
 
   
@@ -684,18 +707,14 @@ function fold(collector_code,
       current_bets.push(roomobj.players[player].last_bet);
     }
   });
-  master_sheet.getRange(3,17).setValue(JSON.stringify(current_bets));
   var round_over = false;
   if(current_bets.length > 1){
     if(current_bets.every( (val, i, arr) => val === arr[0] )){ //i.e. there are at least 2 people with equal bets so move onto the next round
-      master_sheet.getRange(1,18).setValue(JSON.stringify(current_bets));
       roomobj = round_progress(roomobj);
-      master_sheet.getRange(1,18).setValue("nar nar");                                                         
       
       
     } else {
       roomobj = next_player(roomobj);//next player this round
-      master_sheet.getRange(1,18).setValue("hardy");
       
     }
   } else {                                                     //settle up
@@ -709,15 +728,18 @@ function fold(collector_code,
   }
   
 
-  master_sheet.getRange(game_row,3).setValue(JSON.stringify(roomobj));
   if(round_over){
-    deal_cards(fill_deck(),game_row);
+    roomobj = deal_cards(fill_deck(),roomobj);
   }
+  
+  cache.put(room_code,JSON.stringify(roomobj));
+  
+  return JSON.stringify(roomobj);
 }
 
 function next_player(roomobj){
-  var master_sheet = SpreadsheetApp.openById("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g");
-  master_sheet = master_sheet.getSheetByName('Sheet1');
+  
+  roomobj.round[2]++;
   
   var valid_bidders = Object.keys(roomobj.players).filter(function(player){
     return roomobj.players[player].current_bid !== "fold";
@@ -732,14 +754,10 @@ function next_player(roomobj){
         return roomobj.players[player].player_no == roomobj.current_bidder;
       })[0];
       
-      master_sheet.getRange(2,18).setValue("brap");
       if(typeof(roomobj.players[current_player]) !== "undefined" &&
         roomobj.players[current_player].current_bid !== "fold"){
         selected_bidder = true;
-        var master_sheet = SpreadsheetApp.openById("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g");
-        master_sheet = master_sheet.getSheetByName('Sheet1');
         
-        master_sheet.getRange(2,18).setValue("got here");
         Object.keys(roomobj.players).forEach(function(this_player){
           if(this_player == current_player){
             roomobj.players[this_player].current_bid = "your turn";
@@ -769,83 +787,73 @@ function pilot_create_room(){
 
 function create_room(player_name){
   player_name = player_name.toUpperCase();
-  var master_sheet = SpreadsheetApp.openById("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g");
-  master_sheet = master_sheet.getSheetByName('Sheet1');
-  
-  //detect first blank row in code column
-  var game_row = master_sheet.getLastRow()+1;
-  
-  var unique_code_needed = true;
+  var cache = CacheService.getScriptCache();
   var room_code;
+  var unique_code_needed = true;
   while(unique_code_needed){
-    var room_code = makeid(4)
-    //check if the ID is one of the room codes
-    targetValues = master_sheet.getRange(1, 1, 10, 5).getValues().filter(function (r) {
-      return r[1] == room_code
-    });
-    if(targetValues.length == 0){        
+    var room_code = makeid(4);
+    
+    if (cache.get("room_code") === null) {
       unique_code_needed = false;
-    } 
-  }
-  
-  master_sheet.getRange(game_row, 1).setValue(room_code);
-  master_sheet.getRange(game_row, 2).setValue(player_name);
-  
-  
-  //var list players in this room
-  var room_info = {
-    roomcode:room_code,
-    player0:player_name
-  }
-  
-  return ContentService.createTextOutput(JSON.stringify(room_info)).setMimeType(ContentService.MimeType.JAVASCRIPT); 
-  
-}
-function pilot_everybody_in(room_code){
-  everybody_in("KRj75JmD4grZ");
-}
-
-function everybody_in(room_code){
-  var master_sheet = SpreadsheetApp.openById("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g");
-  master_sheet = master_sheet.getSheetByName('Sheet1');
-  //detect if the collector_code exists
-  var game_row = rowOfValue(master_sheet,   //looking within this
-                            room_code, //looking for this
-                            0);             //looking in this column
-  
-  // create the room_obj
-  players = {};
-  for(var i = 5; i < 16; i++){
-    var this_player = master_sheet.getRange(game_row,i).getValues()[0]; 
-    if(this_player !== ""){
-      players[this_player] = {
-        player_no:i-5,
-        chips:1000,
-        current_hand:[],
-        current_bid:"waiting"
-      }      
     }
   }
   
-  // somehow a blank player seems to come through
-  if(typeof(players[""]) !== "undefined"){
-    delete(players[""]);
+  var master_sheet = SpreadsheetApp.openById("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g");
+  master_sheet = master_sheet.getSheetByName('Sheet1');
+  var game_row = master_sheet.getLastRow() + 1
+  master_sheet.getRange(game_row,1).setValue(room_code);
+  master_sheet.getRange(game_row,2).setValue((new Date()).getTime());
+  master_sheet.getRange(game_row,3).setValue(Date(parseInt((new Date()).getTime(), 10)).toString('MM/dd/yy HH:mm:ss'));
+  
+  var room_info = {
+    room_code:room_code,
+    players: [player_name]
   }
   
-  roomobj = {
-    small_blind:1,
-    small_blind_player:0,
-    players : players,
-    round : [0,0]
-  }
+  cache.put(room_code,JSON.stringify(room_info),1500);  
+  
+  return JSON.stringify(room_info);
+}
+function pilot_everybody_in(){
+  
+  //console.log("hi");
+  everybody_in("B8RK");
+}
+
+function everybody_in(room_code){
+  
+  var cache = CacheService.getScriptCache();
+  var cached = JSON.parse(cache.get(room_code));
+  
+  console.log(JSON.stringify(cached));
+  
+  var cached_players = JSON.parse(JSON.stringify(cached.players));
+  cached.players = {};
+  cached_players.forEach(function(player,player_no){
+    cached.players[player] = {
+      player_no:player_no,
+      chips:1000,
+      current_hand:[],
+      current_bid:"waiting"
+    }
+  });
+  console.log(JSON.stringify(cached));
+  
+  cached.small_blind  = 1;
+  cached.small_blind_player = 0;
+  cached.round = [0,0,0];
+
   
   
-  update_room(collector_code,
-              roomobj)
+  cached = deal_cards(fill_deck(),cached);
   
-  deal_cards(fill_deck(),game_row);
+  console.log(JSON.stringify(cached));
   
-  return (master_sheet.getRange(game_row,1).getValues()[0]);
+  cache.put(room_code,JSON.stringify(cached));  
+  
+  
+  return (JSON.stringify(cached));
+  
 }
 
 function pilot_deal_cards(){
@@ -853,11 +861,7 @@ function pilot_deal_cards(){
 }
 
 
-function deal_cards(this_deck,game_row){
-  var master_sheet = SpreadsheetApp.openById("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g");
-  master_sheet = master_sheet.getSheetByName('Sheet1');
-  
-  var roomobj = JSON.parse(master_sheet.getRange(game_row,3).getValues()[0]);
+function deal_cards(this_deck,roomobj){
   
   var players = Object.keys(roomobj.players);
   roomobj.small_blind_player++;
@@ -875,6 +879,7 @@ function deal_cards(this_deck,game_row){
     roomobj.round[0]++;
     roomobj.small_blind = roomobj.small_blind * 2;
   }
+  roomobj.round[2] = 0;
   
   if(roomobj.small_blind_player > players.length - 1){
     roomobj.small_blind_player = 1;
@@ -920,7 +925,8 @@ function deal_cards(this_deck,game_row){
   }
   roomobj.round_phase = 0; //opening
   roomobj.this_deck = this_deck;
-  master_sheet.getRange(game_row,3).setValue(JSON.stringify(roomobj));
+  //master_sheet.getRange(game_row,3).setValue(JSON.stringify(roomobj));
+  return roomobj;
 }
 function fill_deck(){
   this_deck = [];
@@ -955,48 +961,6 @@ function fill_deck(){
   return shuffled_deck;
 }
 
-function pilot_join_room(){
-  join_room("XA4zg6YsotCD",
-            "bob");
-}
-function join_room(collector_code,
-                   player_name){
-  var upper_player_name = player_name.toUpperCase();
-  var master_sheet = SpreadsheetApp.openById("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g");
-  master_sheet = master_sheet.getSheetByName('Sheet1');
-  //detect if the collector_code exists
-  var game_row = rowOfValue(master_sheet,   //looking within this
-                            collector_code, //looking for this
-                            0);             //looking in this column
-  
-  if(game_row == undefined){
-    /*
-    game_row = master_sheet.getLastRow()+1;
-    var room_code = makeid(4);
-    master_sheet.getRange(game_row, 1).setValue(collector_code);
-    master_sheet.getRange(game_row, 2).setValue(room_code);
-    master_sheet.getRange(game_row, 5).setValue(player_name);
-    */
-  } else {
-    //work out the participant number
-    keep_searching = true;
-    for(var i = 5; i < 15; i++){
-      if(master_sheet.getRange(game_row,i).getValues()[0] == ""){
-        if(keep_searching){
-          master_sheet.getRange(game_row,i).setValue(upper_player_name);
-          keep_searching = false;
-        }
-      } else if(master_sheet.getRange(game_row,i).getValues()[0] == upper_player_name){
-        keep_searching = false;
-      }
-    }
-    
-    //complete_col = master_sheet.getDataRange().getValues()[0].length + 1;
-    
-    //master_sheet.getRange(2, 2).setValue("failed");
-    // this should never ever happen (or at least is very very unlikely)
-  }
-}
 
 //based on solution by csharptest.net at https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
 function makeid(length) {
