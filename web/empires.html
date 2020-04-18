@@ -1,0 +1,506 @@
+
+
+<script src="libraries/jquery-3.3.1.min.js"></script>
+<script type="text/javascript" charset="utf-8" src="libraries/popper.min.js"></script>
+
+
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link rel="stylesheet" href="libraries/bootstrapCollector.css">
+<script type="text/javascript" src="libraries/bootstrap.4.0.min.js"></script>
+
+
+<!-- lodash ! not currently used-->
+<script type="text/javascript" charset="utf-8" src="libraries/lodash.4.17.4.min.js"></script>
+
+<!-- papaparse -->
+<script type="text/javascript" charset="utf-8" src="libraries/papaparse.4.3.6.min.js"></script>
+
+
+<!-- bootbox -->
+<script type="text/javascript" src="libraries/bootbox.4.4.0.min.js"></script>
+
+
+
+<!--
+	fix to close button being messed up, by  Pawel Rymsza  on https://stackoverflow.com/questions/48529880/bootbox-dialog-modal-bootstrap-4
+-->
+<style>
+.bootbox .modal-header{
+	display: block;
+}
+</style>
+
+<style>
+#game{
+  position:relative;
+  margin:auto;
+  width:800px;
+  padding:50px;
+  height:800px;
+  text-align: center;  
+  display:none;  
+}
+#lobby{
+  margin:auto;
+  width:500px;
+  padding:50px;
+  max-height:600px;
+  text-align: center;  
+  display:none;  
+}
+#new_room_btn{
+  width:100%;
+}
+#table{
+  border-radius:350px;
+  background-color:green;
+  width:700px;
+  height:600px;
+}
+#welcome_screen{
+  margin:auto;
+  width:500px;
+  padding:50px;
+  max-height:600px;
+  text-align: center;  
+}
+
+
+#deal_cards{
+  position:absolute;
+  top:400px;
+  left:335px;
+}
+#your_bet{
+  position:absolute;
+  top:520px;
+  left:275px;
+}
+#middle_cards{
+  position:absolute;
+  top:250px;
+  left:150px;
+}
+#winner_div{
+  position:absolute;
+  top:450px;
+  left:0px;
+  width:100%;
+}
+.card{
+  width:100px;
+  height:100px;
+}
+.player_space{
+  position:absolute;
+  background-color: white;
+  border-style: solid;
+  border-radius: 10px;
+  padding: 10px;
+  
+}
+.response_btn{
+	margin:2px;
+}
+</style>
+<h1>Room Code: <span id="room_code_span"></span></h1>
+<h1>Time left: <span id="room_time_span"></span></h1>
+<div id="welcome_screen">
+  <h1 class="text-primary">Empires</h1>
+  <button class="btn btn-primary" id="new_room_btn">New room</button>
+  <br><br>
+  <div class="input-group mb-3">
+    <div class="input-group-prepend">
+      <span class="input-group-text">Room code</span>
+    </div>
+    <input type="text" class="form-control" aria-label="room code" id="room_code_input">
+    <div class="input-group-append">
+      <button class="input-group-text btn-primary" id="join_btn">Join</button>
+    </div>
+  </div>
+</div>
+<div id="lobby">
+  <h1>Lobby</h1>
+  <div id="lobby_people"></div>
+  <button class="btn btn-primary" id="everybody_in_btn">Everybody's in</button>
+</div>
+<div id="game">
+</div>
+
+<script>
+
+
+/////////////
+// Actions //
+/////////////
+
+phase = "welcome",
+
+phases = [
+  "welcome",
+  "lobby",
+  "playing"
+]
+
+$("#deal_cards").on("click",function(){
+  var data = {
+    action: "deal",
+    room_code: settings.room_code
+  }
+  $.ajax({
+    type: 'POST',
+    url: "https://script.google.com/macros/s/AKfycbyagEr55_usab_e72fOw7nII6e9twWhcIUVphaS_lO_uyqVVbZX/exec",
+    data: data,
+    crossDomain: true,
+    timeout: 120000,
+    success:function(result){
+			settings.this_room = JSON.parse(result);			
+      //as it stands, this will never happen as Collector doesn't allow posts to it.
+    }
+  })
+  .catch(function(error){
+    //read the google sheet 
+    /*
+    ParseGSX.parseGSX(data.question_id,function(result){
+      show_question(result);
+    });
+    */
+  });
+});
+$("#everybody_in_btn").on("click",function(){
+  var data = {
+      action: "everybody_in",
+      room_code: settings.room_code,
+    }
+    $.ajax({
+      type: 'POST',
+      url: "https://script.google.com/macros/s/AKfycbyagEr55_usab_e72fOw7nII6e9twWhcIUVphaS_lO_uyqVVbZX/exec",
+      data: data,
+      crossDomain: true,
+      timeout: 120000,
+      success:function(result){
+				if(result == "need at least 3 players"){
+					bootbox.alert("You need at least 3 players");
+				} else {
+					console.dir(result);
+					settings.this_room = JSON.parse(result);
+					phase = "playing";
+					sheet_check();
+				}
+
+			
+				/*
+				phase = "playing";
+				settings.this_room = JSON.parse(result);
+				sheet_check();        
+				*/
+      }
+    })
+    .catch(function(error){
+      //read the google sheet 
+      /*
+      ParseGSX.parseGSX(data.question_id,function(result){
+        show_question(result);
+      });
+      */
+    });
+});
+$("#join_btn").on("click",function(){
+	
+	bootbox.prompt("What name do you want to use? (this is not your alias for the first game)",function(player_name){	
+		if(player_name){
+			bootbox.prompt("What do you want to be your alias for the first game?",function(player_alias){
+				if(player_alias){					
+					settings.player_name = player_name.toUpperCase();
+					settings.player_alias = player_alias.toUpperCase();
+					var data = {
+						action: "join",
+						room_code: $("#room_code_input").val(),
+						player_name: settings.player_name,
+						player_alias: settings.player_alias
+					}
+					$.ajax({
+						type: 'POST',
+						url: "https://script.google.com/macros/s/AKfycbyagEr55_usab_e72fOw7nII6e9twWhcIUVphaS_lO_uyqVVbZX/exec",
+						data: data,
+						crossDomain: true,
+						timeout: 120000,
+						success:function(response){
+							settings.this_room = JSON.parse(response);
+							settings.room_code = $("#room_code_input").val();
+							phase = "lobby";
+							var lobby_people_html = "";
+							Object.keys(settings.this_room.players).forEach(function(player){
+								lobby_people_html += "<h2 class='text-primary'>" + player + "</h2>";
+							});
+							$("#lobby_people").html(lobby_people_html);
+							$("#room_code_span").html(settings.room_code);
+							
+						}
+					})
+					.catch(function(error){
+						bootbox.alert("Problem connecting to room " +  $("#room_code_input").val() +". Are you sure you've got the correct room code?"); 
+						//read the google sheet 
+						/*
+						ParseGSX.parseGSX(data.question_id,function(result){
+							show_question(result);
+						});
+						*/
+					});
+				}
+			});				
+		}		
+	});
+});
+$("#new_room_btn").on("click",function(){
+  bootbox.prompt("What name do you want to use? (this is not your alias for the first game)",function(player_name){	
+		if(player_name){
+			bootbox.prompt("What do you want to be your alias for the first game?",function(player_alias){
+				if(player_alias){					
+					settings.player_name = player_name.toUpperCase();
+					settings.player_alias = player_alias.toUpperCase();
+					var data = {
+						action: "create_room",
+						player_name: settings.player_name,
+						player_alias: settings.player_alias
+					}
+					$.ajax({
+						type: 'POST',
+						url: "https://script.google.com/macros/s/AKfycbyagEr55_usab_e72fOw7nII6e9twWhcIUVphaS_lO_uyqVVbZX/exec",
+						data: data,
+						crossDomain: true,
+						timeout: 120000,
+						success:function(this_room){
+							this_room = JSON.parse(this_room);
+							settings.this_room = this_room;
+							
+							
+							settings.room_code = this_room.room_code;
+							settings.players = this_room.players;
+							phase = "lobby";
+							
+							var lobby_people_html = "";
+							Object.keys(settings.players).forEach(function(player){
+								lobby_people_html += "<h2 class='text-primary'>" + player + "</h2>";
+							});
+							$("#lobby_people").html(lobby_people_html);
+							$("#room_code_span").html(settings.room_code);
+							
+						}
+					})
+					.catch(function(error){
+						console.dir(error);
+					});
+				}
+			});
+		}
+  });
+});
+
+
+$("#room_code_input").on("input",function(){
+  $(this).val($(this).val().toUpperCase());
+});
+
+settings={
+  room_code: "tbc",
+  player_name: "tbc",
+  this_room: "tbc",
+  raw_deck: {},
+  player_cards:{},
+  table_cards:[],
+  missing_players_showing:true,
+	clock_waiting: true,
+	timer_left:9000,
+	start_clock: function(){
+		if(settings.clock_waiting){
+			settings.clock_waiting = false;
+			setInterval(function(){
+				settings.timer_left--;				
+				var formatted_time = Math.floor(settings.timer_left/3600) + " hours; " +  Math.floor((settings.timer_left % 3600)/60) + " mins; " + Math.floor(settings.timer_left % 60) + " secs";				
+				$("#room_time_span").html(formatted_time);
+			},1000);
+		}
+	}
+}
+
+
+player_obj = {
+  name:"tbc",
+  amount:-1,
+  wipeouts:0,
+  current_round:-1
+}
+
+function guess_player(alias,
+											player_no){
+	console.dir("alias");
+	console.dir(alias);
+	console.dir("player_no");
+	console.dir(player_no);
+	var data = {
+		action: "guess_player",
+		alias: alias,
+		player_no: player_no,
+		room_code: settings.room_code,
+		player_name: settings.player_name
+	}
+	$.ajax({
+		type: 'POST',
+		url: "https://script.google.com/macros/s/AKfycbyagEr55_usab_e72fOw7nII6e9twWhcIUVphaS_lO_uyqVVbZX/exec",
+		data: data,
+		crossDomain: true,
+		timeout: 120000,
+		success:function(this_room){
+			if(this_room == "it's not your turn"){
+				bootbox.alert("It's not your turn yet");
+			} else {
+				settings.this_room = JSON.parse(this_room);			
+			}
+			sheet_check();		
+		}
+	})
+	.catch(function(error){
+		console.dir(error);
+		sheet_check(); //assume that the user is still waiting
+	});
+}
+
+function sheet_check(){
+	console.dir("starting loop");
+	switch(phase){
+		case "welcome":
+			//do nothing
+			setTimeout(function(){ //check if you've moved onto lobby
+				sheet_check();
+			},1000);
+			break;
+		case "lobby":
+			$("#welcome_screen").hide();
+			$("#lobby").show();
+			$("#game").hide();
+			
+			
+			//check if anyone new has joined
+			var data = {
+				action: "new_player_wait",
+				room_code: settings.room_code,
+				players: JSON.stringify(settings.this_room.players)
+			}
+			$.ajax({
+				type: 'POST',
+				url: "https://script.google.com/macros/s/AKfycbyagEr55_usab_e72fOw7nII6e9twWhcIUVphaS_lO_uyqVVbZX/exec",
+				data: data,
+				crossDomain: true,
+				timeout: 120000,
+				success:function(this_room){
+					console.dir("this_room");
+					console.dir(this_room);
+					this_room = JSON.parse(this_room);
+					settings.this_room = this_room;
+					if(settings.this_room.stage == "playing"){						
+						settings.room_code = settings.this_room.room_code;
+						phase = "playing";
+						$("#lobby").hide();
+						$("#game").fadeIn(1000);
+					} else {
+						var lobby_people_html = "";
+						Object.keys(settings.this_room.players).forEach(function(player){
+							lobby_people_html += "<h2 class='text-primary'>" + player + "</h2>";
+						});
+						$("#lobby_people").html(lobby_people_html);
+						$("#room_code_span").html(settings.room_code);
+					}					
+					sheet_check();
+				}
+			})
+			.catch(function(error){
+				console.dir(error);
+				sheet_check(); //assume that the user is still waiting
+			});
+			
+			break;
+		case "playing":
+			$("#welcome_screen").hide();
+			$("#lobby").hide();
+			$("#game").show();
+			
+			
+			var aliases = Object.keys(settings.this_room.players).map(function(player){
+				return settings.this_room.players[player].alias;
+			});
+			
+
+			
+			var game_html = "<h1 id='last_guess' class='text-primary'>" + settings.this_room.last_guess + "</h1>" +
+											"<table class='table'>" + 
+												"<thead>" +
+													"<tr>" +
+														"<th scope='col'>Player</th>" +
+														"<th scope='col'>Turn</th>" + 
+														"<th scope='col'>Empire</th>" +
+														"<th scope='col'>Possible Aliases</th>" +
+													"</tr>" +
+												"</thead>" +
+												"<tbody>";
+													
+			Object.keys(settings.this_room.players).forEach(function(player,player_no){
+				if(settings.this_room.players[player].current_bid == "your turn"){
+					row_class = "text-white bg-primary";
+					btn_class = "text-primary bg-white";
+				} else {
+					row_class = "text-primary bg-white";
+					btn_class = "text-white bg-primary";
+				}
+			
+				var aliases_buttons = aliases.map(function(alias){
+					return "<button class='btn btn-primary response_btn " + btn_class + "' value='"+alias+"'>" + alias + "<span style='display:none'>"+player_no+"</span></button>";
+				});
+				game_html += 	"<tr class='" + row_class + "'>" +
+												"<td>" + player + "</td>" + 
+												"<td>" + settings.this_room.players[player].current_bid + "</td>" +
+												"<td>" + settings.this_room.players[player].empire      + "</td>" +
+												"<td>" + aliases_buttons.join("")                       + "</td>" +
+											"</tr>";
+			});
+			game_html += "</tbody>" +
+				"</table>";
+			
+			$("#game").html(game_html);
+			$(".response_btn").on("click",function(){
+				var alias = $(this).val();
+				var player_number = $(this).find("span").html();
+				console.dir("hi");
+				guess_player(alias,player_number);				
+			});
+			
+			var data = {
+				action: "turn_wait",
+				room_code: settings.room_code,
+				this_room: JSON.stringify(settings.this_room)
+			}
+			$.ajax({
+				type: 'POST',
+				url: "https://script.google.com/macros/s/AKfycbyagEr55_usab_e72fOw7nII6e9twWhcIUVphaS_lO_uyqVVbZX/exec",
+				data: data,
+				crossDomain: true,
+				timeout: 120000,
+				success:function(this_room){
+					console.dir(this_room);
+					settings.this_room = JSON.parse(this_room);
+					sheet_check();
+				}
+			})
+			.catch(function(error){
+				console.dir(error);
+				setTimeout(function(){
+					sheet_check();
+				},1000);
+				
+				//sheet_check(); //assume that the user is still waiting
+			});
+	}
+}
+sheet_check();
+
+</script>

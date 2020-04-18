@@ -165,7 +165,7 @@ function new_player_wait(room_code,
 }
 
 function pilot_raise(){
-  raise("VNUB",
+  raise("L3OT",
         "BOB",
         10)
 }
@@ -186,16 +186,38 @@ function raise(room_code,
   }
   
   
-  var max_bid = -1;
+  
+  
+  var max_bid = roomobj.small_blind * 2;
   Object.keys(roomobj.players).forEach(function(player){
     if(roomobj.players[player].current_pot > max_bid){
       max_bid = roomobj.players[player].current_pot;
     }
   });
   
+  if(raise_amount > max_bid){
+    raise_amount = max_bid;
+  }
+  if(raise_amount < roomobj.small_blind * 2){
+    raise_amount = roomobj.small_blind * 2
+  }
+  
+  //what is the max the user can actually raise
+  
+  /*
+  var user_max_raise = roomobj.players[player_name].chips - max_bid + roomobj.players[player_name].current_pot;
+  
+  if(raise_amount > user_max_raise){
+    raise_amount = user_max_raise;
+  }
+  */
+  
+
+/*  
   if(parseFloat(max_bid) + parseFloat(raise_amount) > roomobj.players[player_name].chips - parseFloat(roomobj.players[player_name].current_pot)){
     raise_amount-= (parseFloat(max_bid) + parseFloat(raise_amount)) - (roomobj.players[player_name].chips); // -parseFloat(roomobj.players[player_name].current_pot)
   }
+  */
   
   roomobj.players[player_name].chips-= parseFloat(raise_amount) + parseFloat(max_bid) - parseFloat(roomobj.players[player_name].current_pot);
   
@@ -343,6 +365,15 @@ function resolve_bets(roomobj){
     roomobj.winner = [winning_player.players];
     roomobj.winner_hand = winning_player.hand_description;
   }
+  
+  //eliminate players who have no chips
+  Object.keys(roomobj.players).forEach(function(player){
+    if(roomobj.players[player].chips == 0){
+      delete (roomobj.players[player])
+    }
+  });
+  
+  
   return roomobj;
 }
 
@@ -500,9 +531,9 @@ function evaluate_hand(all_cards){
       });
     });
   }
-  var master_sheet = SpreadsheetApp.openById("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g");
-  master_sheet = master_sheet.getSheetByName('Sheet1');
-  master_sheet.getRange(1,18).setValue(JSON.stringify(hand_summary.straight_flush));
+  //var master_sheet = SpreadsheetApp.openById("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g");
+  //master_sheet = master_sheet.getSheetByName('Sheet1');
+  //master_sheet.getRange(1,18).setValue(JSON.stringify(hand_summary.straight_flush));
 
   while(hand_summary.straight_flush.length > 5){
     hand_summary.straight_flush.splice(0,1);
@@ -553,6 +584,7 @@ function evaluate_hand(all_cards){
   
 
   Object.keys(same_numbers).forEach(function(same_number){
+    same_number = parseFloat(same_number);
     switch(same_numbers[same_number]){
       case 4:
         hand_summary.four_kind.four = same_number;
@@ -820,10 +852,12 @@ function create_room(player_name){
   
   var room_info = {
     room_code:room_code,
-    players: [player_name]
+    players: [player_name],
+    start_time: (new Date()).getTime(),
+    start_date: Date(parseInt((new Date()).getTime(), 10)).toString('MM/dd/yy HH:mm:ss')
   }
   
-  cache.put(room_code,JSON.stringify(room_info),1500);  
+  cache.put(room_code,JSON.stringify(room_info),10800);  //three hours
   
   return JSON.stringify(room_info);
 }
