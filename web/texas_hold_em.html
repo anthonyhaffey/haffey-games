@@ -631,37 +631,37 @@ function update_players(){
           $(".player_card").hide();
           settings.missing_players_showing = false;
         }
-        Object.keys(roomobj.players).forEach(function(player,player_no){
-          this_player_no = player_no + 1;
-          if(player == settings.player_name){
+				for(var this_player_no = 1; this_player_no < 11; this_player_no++){				
+					
+					var player = Object.keys(roomobj.players)[this_player_no - 1];
+					
+        //Object.keys(roomobj.players).forEach(function(player,player_no){
+          
+					if(typeof(player) == "undefined"){
+						$("#player_"+this_player_no+"_card_1").hide();
+						$("#player_"+this_player_no+"_card_2").hide();
+					} else if(player == settings.player_name){
             $("#player_"+this_player_no+"_card_1").attr("src","Stimuli/Cards/" + your_player.current_hand[0].card_file);
             $("#player_"+this_player_no+"_card_2").attr("src","Stimuli/Cards/" + your_player.current_hand[1].card_file);
             $("#player_"+this_player_no+"_card_1").show();
             $("#player_"+this_player_no+"_card_2").show();
-          } else {
-            if(typeof(roomobj.winner) == "undefined" || roomobj.winner.length == 0){
-              $("#player_"+this_player_no+"_card_1").attr("src","Stimuli/Cards/back-red.png");
-              $("#player_"+this_player_no+"_card_2").attr("src","Stimuli/Cards/back-red.png");
-              $("#player_"+this_player_no+"_card_1").show();
-              $("#player_"+this_player_no+"_card_2").show();
-            } else {
-              if(roomobj.players[player].current_bid !== "fold"){
-                $("#player_"+this_player_no+"_card_1").attr("src","Stimuli/Cards/" + roomobj.players[player].current_hand[0].card_file);
-                $("#player_"+this_player_no+"_card_2").attr("src","Stimuli/Cards/" + roomobj.players[player].current_hand[1].card_file);
-                $("#player_"+this_player_no+"_card_1").show();
-                $("#player_"+this_player_no+"_card_2").show();
-              } else {
-                $("#player_"+this_player_no+"_card_1").attr("src","Stimuli/Cards/back-red.png");
-                $("#player_"+this_player_no+"_card_2").attr("src","Stimuli/Cards/back-red.png");
-                $("#player_"+this_player_no+"_card_1").show();
-                $("#player_"+this_player_no+"_card_2").show();
-              }
-            }
-          }
-          if(roomobj.players[player].current_pot > max_bid){
-            max_bid = roomobj.players[player].current_pot;
-          }
-        });
+          } else if(typeof(roomobj.winner) == "undefined" || roomobj.winner.length == 0){
+						$("#player_"+this_player_no+"_card_1").attr("src","Stimuli/Cards/back-red.png");
+						$("#player_"+this_player_no+"_card_2").attr("src","Stimuli/Cards/back-red.png");
+						$("#player_"+this_player_no+"_card_1").show();
+						$("#player_"+this_player_no+"_card_2").show();
+					} else if(roomobj.players[player].current_bid !== "fold"){
+						$("#player_"+this_player_no+"_card_1").attr("src","Stimuli/Cards/" + roomobj.players[player].current_hand[0].card_file);
+						$("#player_"+this_player_no+"_card_2").attr("src","Stimuli/Cards/" + roomobj.players[player].current_hand[1].card_file);
+						$("#player_"+this_player_no+"_card_1").show();
+						$("#player_"+this_player_no+"_card_2").show();
+					} else {
+						$("#player_"+this_player_no+"_card_1").attr("src","Stimuli/Cards/back-red.png");
+						$("#player_"+this_player_no+"_card_2").attr("src","Stimuli/Cards/back-red.png");
+						$("#player_"+this_player_no+"_card_1").show();
+						$("#player_"+this_player_no+"_card_2").show();
+					}
+        }
       
 
       
@@ -762,7 +762,16 @@ function update_players(){
       } else {
         dealer_html = "";
       }
-      var player_html = "<h6>" + this_player + dealer_html + "</h6>" +
+			
+			
+			if(this_player == settings.player_name){
+        var leave_html = "<button class='btn btn-danger leave_button' value='" + this_player + "'>Leave</button>";
+      } else {
+				var leave_html = "";
+			}
+			
+			
+      var player_html = "<h6>" + this_player + dealer_html + leave_html + "</h6>" +
                         "<h6>Chips: " + roomobj.players[this_player].chips + "</h6>" +
                         "<h6>Bet: "   + roomobj.players[this_player].current_pot + "</h6>" +
                         "<h6>Status: "   + roomobj.players[this_player].current_bid + "</h6>";
@@ -775,6 +784,31 @@ function update_players(){
       
     }
   };
+	$(".leave_button").on("click",function(){
+		bootbox.confirm("Are you sure you want to leave the game? This cannot be reversed!",function(result){
+			if(result){
+				var data = {
+					action: "remove_player",
+					player_name: settings.player_name,
+					room_code: settings.room_code
+				}
+				$.ajax({
+					type: 'POST',
+					url: "https://script.google.com/macros/s/AKfycbzdLP0pkgsZ_iKKMER7ZyM6_jnguMa3FZXIorz2aVfjkG8v6Dc/exec",
+					data: data,
+					crossDomain: true,
+					timeout: 120000,
+					success:function(response){
+						if(response == "success"){
+							bootbox.alert("You have succesfully left the game");						
+						} else {
+							bootbox.alert("You have not succesfully left the game. Sozzles");
+						}
+					}
+				})
+			}
+		});
+	});
 }
 
 /*
