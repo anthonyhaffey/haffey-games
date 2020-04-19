@@ -6,6 +6,35 @@ function doPost(e){
   return initiate(e);
 }
 
+function pilot_deal_draw(){
+  var cache = CacheService.getScriptCache();
+  var roomobj = JSON.parse(cache.get("TVLE"));
+      roomobj = deal_cards(fill_deck(),roomobj);
+  roomobj.middle_cards = [{
+    card_file:"spade_8.png",
+    card_no  : 8,
+    suit     :"spade"
+  },{
+    card_file:"spade_9.png",
+    card_no  : 9,
+    suit     :"spade"
+  },{
+    card_file:"spade_5.png",
+    card_no  : 5,
+    suit     :"spade"
+  },{
+    card_file:"spade_7.png",
+    card_no  : 7,
+    suit     :"spade"
+  },{
+    card_file:"spade_6.png",
+    card_no  : 6,
+    suit     :"spade"
+  }];
+  cache.put("TVLE",JSON.stringify(roomobj));
+                          
+}
+
 function initiate(e) {
   var master_sheet = SpreadsheetApp.openById("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g");
       master_sheet = master_sheet.getSheetByName('Sheet1');
@@ -250,7 +279,7 @@ function raise(room_code,
 }
 
 function pilot_check_call(){
-  check_call("VDHS","ANT");
+  check_call("TVLE","BOB");
 }
 
 function check_call(room_code,
@@ -306,8 +335,9 @@ function check_call(room_code,
 } 
 
 function resolve_bets(roomobj){
+  
   var master_sheet = SpreadsheetApp.openById("1lp9SwAtHytTGCJFfTkA9VUDz1mEk3Oez2xlDFapPt8g");
-    master_sheet = master_sheet.getSheetByName('Sheet1');
+      master_sheet = master_sheet.getSheetByName('Sheet1');
   var winning_player = {
     players:"tbc",
     rank:-1,
@@ -320,7 +350,7 @@ function resolve_bets(roomobj){
     if(roomobj.players[player].current_bid !== "fold"){
       //detect what the hand is first
       var all_cards = roomobj.players[player].current_hand.concat(roomobj.middle_cards);
-      [hand_description,player_best_hand,hand_score] = evaluate_hand(all_cards);
+      [hand_description, player_best_hand, hand_score] = evaluate_hand(all_cards);
       
       master_sheet.getRange(debug_row+6,16).setValue(JSON.stringify(hand_score));
       
@@ -359,11 +389,27 @@ function resolve_bets(roomobj){
     
     master_sheet.getRange(4,16).setValue(JSON.stringify(winning_player));
     
+    //console.log(JSON.stringify(roomobj));
+    console.log(JSON.stringify(winning_player));
+    
     Object.keys(winning_player.players).forEach(function(player){
+      console.log("player");
+      console.log(player);
+      
+      
+    });
+    
+    console.log("winning_player.players");
+    console.log(winning_player.players);
+    
+    winning_player.players.forEach(function(player){
+      console.log("player");
+      console.log(player);
+      
       roomobj.players[player].chips += split_pot;
     });
     roomobj.winner = [winning_player.players];
-    roomobj.winner_hand = winning_player.hand_description;
+    roomobj.winning_hand = winning_player.hand_description;
   }
   
   //eliminate players who have no chips
@@ -1012,7 +1058,7 @@ function fill_deck(){
 //based on solution by csharptest.net at https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
 function makeid(length) {
   var result           = '';
-  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
+  var characters       = 'ABCDEFGHJKLMNPQRSTUVWXY3456789';
   var charactersLength = characters.length;
   for ( var i = 0; i < length; i++ ) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
