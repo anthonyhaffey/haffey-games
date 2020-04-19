@@ -154,17 +154,11 @@ $("#deal_cards").on("click",function(){
     crossDomain: true,
     timeout: 120000,
     success:function(result){
-			settings.this_room = JSON.parse(result);			
-      //as it stands, this will never happen as Collector doesn't allow posts to it.
+			settings.this_room = JSON.parse(result);      
     }
   })
   .catch(function(error){
-    //read the google sheet 
-    /*
-    ParseGSX.parseGSX(data.question_id,function(result){
-      show_question(result);
-    });
-    */
+    //nothing atm
   });
 });
 $("#everybody_in_btn").on("click",function(){
@@ -187,22 +181,10 @@ $("#everybody_in_btn").on("click",function(){
 					phase = "playing";
 					sheet_check();
 				}
-
-			
-				/*
-				phase = "playing";
-				settings.this_room = JSON.parse(result);
-				sheet_check();        
-				*/
       }
     })
     .catch(function(error){
-      //read the google sheet 
-      /*
-      ParseGSX.parseGSX(data.question_id,function(result){
-        show_question(result);
-      });
-      */
+      //nothing atm
     });
 });
 $("#join_btn").on("click",function(){
@@ -366,7 +348,21 @@ function guess_player(alias,
 	});
 }
 
+alias_prompt = "waiting";
+
 function sheet_check(){
+	
+	//reset alias_prompt to "waiting" if safe to do so
+	
+	if(typeof(settings.this_room) !== "undefined" &&
+		 typeof(settings.this_room.players) !== "undefined" &&
+		 Object.keys(settings.this_room.players).filter(function(player){
+			 return settings.this_room.players[player].current_bid == "your turn";
+		 }).length == 1){		
+			alias_prompt = "waiting"
+	}
+	
+
 	console.dir("starting loop");
 	switch(phase){
 		case "welcome":
@@ -439,56 +435,146 @@ function sheet_check(){
 					result.push(settings.this_room.players[player].alias);
 				} 
 				return result;				
-			}, []);			
-			
+			}, []);	
+
+			aliases = aliases.concat(settings.this_room.computer_names);
 			aliases = shuffle(aliases);
 			
+			if(Object.keys(settings.this_room.players).length == 1){
+				var new_game_btn_html = "<button id='new_game_btn' class='btn btn-primary'>New game</button>";
+			} else {
+				var new_game_btn_html = "";
+			}
+			
+			
+			if(typeof(settings.this_room.players[settings.player_name]) !== "undefined" && 
+								settings.this_room.players[settings.player_name].current_bid == "your turn"){
+				en_disabled = "";
+			} else {
+				en_disabled = "disabled";
+			}
+			
 			var game_html = "<h1 id='last_guess' class='text-primary'>" + settings.this_room.last_guess + "</h1>" +
+											new_game_btn_html +
 											"<table class='table'>" + 
 												"<thead>" +
 													"<tr>" +
 														"<th scope='col'>Player</th>" +
+														"<th scope='col'>Wins</th>" +
 														"<th scope='col'>Turn</th>" + 
 														"<th scope='col'>Empire</th>" +
 														"<th scope='col'>Possible Aliases</th>" +
 													"</tr>" +
 												"</thead>" +
 												"<tbody>";
-													
+			
+			var button_style = "";
+			if(Object.keys(settings.this_room.players).filter(function(player){
+				return settings.this_room.players[player].current_bid == "alias needed";
+			}).length > 0){
+				var button_style = "display:none";
+			} 
+			
+			
 			Object.keys(settings.this_room.players).forEach(function(player,player_no){
 				if(settings.this_room.players[player].current_bid == "your turn"){
 					row_class = "text-white bg-primary";
 					btn_class = "text-primary bg-white";
+					
 				} else {
 					row_class = "text-primary bg-white";
 					btn_class = "text-white bg-primary";
+					
 				}
 				if(player == settings.player_name){
 					aliases_buttons = "";
 				} else {
 					var aliases_buttons = aliases.map(function(alias){
-						return "<button class='btn btn-primary response_btn " + btn_class + "' value='"+alias+"'>" + alias + "<span style='display:none'>"+player_no+"</span></button>";
-					});
+						return "<button style='" + button_style + "' class='btn btn-primary response_btn " + btn_class + "' value='"+alias+"' " + en_disabled + ">" + alias + "<span style='display:none'>"+player_no+"</span></button>";
+					});									
 					aliases_buttons = aliases_buttons.join("");
 				}
 				game_html += 	"<tr class='" + row_class + "'>" +
 												"<td>" + player + "</td>" + 
+												"<td>" + settings.this_room.wins[player] 								+ "</td>" + 
 												"<td>" + settings.this_room.players[player].current_bid + "</td>" +
 												"<td>" + settings.this_room.players[player].empire      + "</td>" +
 												"<td>" + aliases_buttons					                      + "</td>" +
 											"</tr>";
 			});
+			
+			
 			game_html += "</tbody>" +
 				"</table>";
 			
 			$("#game").html(game_html);
+			
+			$("#new_game_btn").on("click",function(){
+				var data = {
+					action: "new_game",
+					room_code: settings.room_code,					
+				}
+				$.ajax({
+					type: 'POST',
+					url: "https://script.google.com/macros/s/AKfycbyagEr55_usab_e72fOw7nII6e9twWhcIUVphaS_lO_uyqVVbZX/exec",
+					data: data,
+					crossDomain: true,
+					timeout: 120000,
+					success:function(this_room){
+						settings.this_room = JSON.parse(this_room);
+					}
+				})
+				.catch(function(error){
+					console.dir(error);
+					setTimeout(function(){
+						sheet_check();
+					},1000);
+				});
+			});
 			$(".response_btn").on("click",function(){
 				var alias = $(this).val();
 				var player_number = $(this).find("span").html();
-				console.dir("hi");
 				guess_player(alias,player_number);				
 			});
 			
+			
+			function alias_needed(){
+				if(typeof(settings.this_room.players[settings.player_name]) !== "undefined" &&
+					 settings.this_room.players[settings.player_name].current_bid == "alias needed" &&
+					 alias_prompt == "waiting"){
+					alias_prompt = bootbox.prompt("New game starting - What is your new alias? If you don't want to play again, tell the other players to create a new room.", function(alias){
+						if(alias){
+							data = {
+								action: 	    "new_alias",
+								player_alias: alias,
+								player_name:  settings.player_name,
+								room_code: 		settings.room_code
+							}
+							$.ajax({
+								type: 'POST',
+								url: "https://script.google.com/macros/s/AKfycbyagEr55_usab_e72fOw7nII6e9twWhcIUVphaS_lO_uyqVVbZX/exec",
+								data: data,
+								crossDomain: true,
+								timeout: 120000,
+								success:function(this_room){
+									
+									console.dir(this_room);
+									settings.this_room = JSON.parse(this_room);
+								}
+							})
+							.catch(function(error){
+								console.dir(error);
+								setTimeout(function(){
+									sheet_check();
+								},1000);
+							});
+						} else {
+							alias_needed();
+						}
+					});
+				}
+			}
+			alias_needed();
 			var data = {
 				action: "turn_wait",
 				room_code: settings.room_code,
