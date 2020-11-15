@@ -1,0 +1,292 @@
+
+<script src="libraries/bootbox.4.4.0.min.js"></script>
+
+<link rel="stylesheet" href="libraries/bootstrapCollector.css">
+
+<script src="libraries/jquery-3.3.1.min.js"></script>
+
+<script src="libraries/bootstrap.4.0.min.js"></script>
+
+
+
+<style>
+.werewolf_kills{
+  font-size:20px;
+}
+
+#day_div{
+  display:block;
+}
+#night_div{
+  display:none;
+}
+#everything{
+  margin:50px;
+  background-color:white;
+  border-width: 2px !important;
+}
+
+</style>
+
+
+<div class="jumbotron border border-primary" id="everything">
+  <h1 class="display-4 text-primary">Werewolf</h1>
+  <p>
+    <a class="btn btn-outline-primary narrator_player" data-toggle="collapse" href="#narrator_view" role="button" aria-expanded="false" aria-controls="narrator_view">Narrator</a>
+    <button class="btn btn-outline-primary narrator_player" type="button" data-toggle="collapse" data-target="#player_view" aria-expanded="false" aria-controls="player_view">Player</button>
+  </p>
+  <div class="input-group mb-3">
+    <div class="input-group-prepend">
+      <span class="input-group-text" id="basic-addon1">Room Code</span>
+    </div>
+    <input id="room_code" placeholder="If you are a player the narrator will tell you what this is, if you are a narrator then complete the below (after clicking on the narrator button above)" class="form-control">
+  </div>
+  <div class="collapse multi-collapse" id="narrator_view">
+    <input id="player_names_input" placeholder= "player names">
+    <button class="btn btn-primary" id="player_names_btn">Start</button>
+    <button class="btn btn-light border-dark"   id="day_time_btn">Day time</button>
+    <button class="btn btn-dark"    id="night_time_btn">Night time</button>
+
+    <div id="night_div">
+      <h3>Night</h3>
+      Narrator needs to explain the following:<br>
+        - Everyone close their eyes<br>
+        - Werewolves open their eyes and choose their victim<br>
+        - Seer open their eyes and asks moderator if a player is a werewolf or not<br>
+        - Protector opens their eyes and chooses someone to be saved<br>
+        - Moderator announces what happened
+    </div>
+    <div id="day_div">
+      <h3>Day</h3>
+      - If this is not the first round, and someone was killed by a werewolf, click on the "killed by werewolf button"<br>
+      - Discuss who you think the werewolf/werewolves are<br>
+      - Vote on who to kill as a mob<br>
+      - Click on whoever whoever got the most votes with the "killed by mob" button
+
+      <div id="table_div"></div>
+    </div>
+  </div>
+
+
+
+  <div class="collapse multi-collapse" id="player_view">
+    <input id="player_number_input" type="number" placeholder="Your player number"/>
+    <button id="join_btn">Join</button>
+    <h1 id="your_character" class="text-primary"></h1>
+  </div>
+
+
+
+</div>
+
+
+
+
+<script>
+
+$(".narrator_player").on("click",function(){
+  console.log($(this));
+  if($(this).hasClass("btn-outline-primary")){
+    $(this).removeClass("btn-outline-primary");
+    $(this).addClass("btn-primary");
+  } else {
+    $(this).addClass("btn-outline-primary");
+    $(this).removeClass("btn-primary");
+  }
+});
+
+var characters = [
+  "werewolf",
+  "villager",
+  "villager",
+  "seer",
+  "protector",
+  "werewolf",
+  "villager",
+  "mason",
+  "mason",
+  "werewolf",
+  "villager",
+  "villager",
+  "seer",
+  "protector",
+  "werewolf",
+  "villager",
+  "mason",
+  "mason",
+  "werewolf",
+  "villager",
+  "villager",
+  "seer",
+  "protector",
+  "werewolf",
+  "villager",
+  "mason",
+  "mason",
+  "werewolf",
+  "villager",
+  "villager",
+  "seer",
+  "protector",
+  "werewolf",
+  "villager",
+  "mason",
+  "mason",
+  "werewolf",
+  "villager",
+  "villager",
+  "seer",
+  "protector",
+  "werewolf",
+  "villager",
+  "mason",
+  "mason"
+];
+
+
+
+$("#player_names_btn").on("click", function(){
+  var table_html = '<table class="table">' +
+    '<thead>' +
+      '<tr>'  +
+        '<th>' +
+          'Player name' +
+        '</th>' +
+        '<th>' +
+          'Alive or dead?' +
+        '</th>' +
+        '<th>' +
+          'Werewolf killed?' +
+        '</th>' +
+        '<th>'  +
+          'Killed by mob' +
+        '</th>' +
+      '</tr>' +
+    '</thead>' +
+    '<tbody>';
+
+  var these_player_names = $("#player_names_input").val();
+      these_player_names = these_player_names.split(",");
+
+  these_player_names.forEach(function(this_player, this_index){
+    table_html += '<tr>' +
+      '<td>' +
+        (this_index + 1) + ". " + this_player +
+      '</td>' +
+      '<td id="' + this_player +'_alive_dead">' +
+        'Alive' +
+      '</td>' +
+      '<td>' +
+        '<button class="werewolf_kills btn btn-danger">' + this_player +' killed by werewolf</button>' +
+      '</td>' +
+      '<td>' +
+        '<button class="mob_kills btn btn-danger">' + this_player +' killed by mob</button>' +
+      '</td>' +
+    '</tr>';
+  });
+
+  table_html += "</tbody></table>";
+
+  $("#table_div").html(table_html);
+
+  $(".werewolf_kills").on("click", function(){
+
+    var this_message = this.innerHTML;
+    var this_player  = this_message.replace(" killed by werewolf","");
+
+        this_player  = this_player.toLowerCase();
+
+    $("#" + this_player + "_alive_dead").html("dead");
+    $("#" + this_player + "_alive_dead").css("color", "red");
+
+    //alert(this_player);
+  });
+
+  var no_players = these_player_names.length;
+  var pp_order = Array.from({
+    length: no_players
+  }, (_, i) => i);
+
+  var rand_number              = Math.floor(Math.random() * 99) + 1;
+      rand_number = (rand_number+"").padStart(2, "0");
+
+  $("#room_code").val(rand_number + (no_players + "").padStart(2, "0"));
+  console.log(these_player_names);
+});
+
+
+//seeded shuffle by ulf Aslak at https://stackoverflow.com/questions/16801687/javascript-random-ordering-with-seed
+function seed_shuffle(array, seed) {                // <-- ADDED ARGUMENT
+  var m = array.length, t, i;
+
+  // While there remain elements to shuffle…
+  while (m) {
+
+    // Pick a remaining element…
+    i = Math.floor(seed_random(seed) * m--);        // <-- MODIFIED LINE
+
+    // And swap it with the current element.
+    t = array[m];
+    array[m] = array[i];
+    array[i] = t;
+    ++seed                                     // <-- ADDED LINE
+  }
+
+  return array;
+}
+
+function seed_random(seed) {
+  var x = Math.sin(seed++) * 10000;
+  return x - Math.floor(x);
+}
+
+
+
+$("#join_btn").on("click",function(){
+  if($("#player_number_input").val() == ""){
+    alert("Please insert your player number");
+  } else if($("#room_code").val() == "") {
+    alert("Please insert the room code");
+  } else {
+    /*
+    * extract the number of players
+    */
+    var no_players  = parseFloat($("#room_code").val().slice(2,4));
+    var seed_number = parseFloat($("#room_code").val().slice(0,2));
+
+    console.dir("no player = " + no_players);
+    console.dir("seed number = " + seed_number);
+
+    var our_characters = characters.slice(0,no_players);
+        seed_shuffle(our_characters, seed_number);
+
+    var your_player_no = parseFloat($("#player_number_input").val()) - 1;
+
+    $("#your_character").html("You are a " + our_characters[your_player_no]);
+
+  }
+});
+
+$("#day_time_btn").on("click", function(){
+  $("#day_div").show();
+  $("#night_div").hide();
+});
+
+$("#night_time_btn").on("click", function(){
+  $("#day_div").hide();
+  $("#night_div").show();
+});
+
+$(".werewolf_kills").on("click", function(){
+
+  var this_message = this.innerHTML;
+  var this_player  = this_message.replace(" killed by werewolf","");
+
+      this_player  = this_player.toLowerCase();
+
+  $("#" + this_player + "_alive_dead").html("dead");
+  $("#" + this_player + "_alive_dead").css("color", "red");
+
+  //alert(this_player);
+});
+</script>
